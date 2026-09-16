@@ -116,7 +116,9 @@ func shutdownSessionsSync(sock socket.HAProxySocket, duration time.Duration) {
 	var sessionList []string
 	for _, s := range strings.Split(sess[0], "\n") {
 		i := strings.Index(s, ":")
-		if i > 0 {
+		// skip our own connection to the admin socket, otherwise the loop
+		// below shuts it down and cannot reach the remaining sessions
+		if i > 0 && !strings.Contains(s, "proto=unix_stream") {
 			sessionList = append(sessionList, s[:i])
 		}
 	}
