@@ -81,7 +81,7 @@ N42 Gateway uses [Helm](https://helm.sh) chart to install and configure the cont
     $ helm upgrade n42 n42/n42-gateway\
       --install\
       --create-namespace --namespace n42-gateway-system\
-      --version 0.17.0-alpha.2 --devel\
+      --version 0.17.0-alpha.3 --devel\
       -f n42-gateway-values.yaml
     ```
 
