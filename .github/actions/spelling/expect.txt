@@ -182,6 +182,7 @@ HATCP
 hatcpserviceports
 hatmpl
 hatypes
+hayden
 hback
 hconfig
 hdef

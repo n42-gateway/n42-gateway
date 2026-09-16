@@ -3,6 +3,16 @@
 * [Major improvements](#major-improvements)
 * [Upgrade notes - read before upgrade from v0.16!](#upgrade-notes)
 * [Contributors](#contributors)
+* [v0.17.0-alpha.3](#v0170-alpha3)
+  * [Reference](#reference-a3)
+  * [Release notes](#release-notes-a3)
+  * [Improvements](#improvements-a3)
+  * [Fixes](#fixes-a3)
+* [v0.17.0-alpha.2](#v0170-alpha2)
+  * [Reference](#reference-a2)
+  * [Release notes](#release-notes-a2)
+  * [Improvements](#improvements-a2)
+  * [Fixes](#fixes-a2)
 * [v0.17.0-alpha.1](#v0170-alpha1)
   * [Reference](#reference-a1)
   * [Release notes](#release-notes-a1)
@@ -13,6 +23,7 @@
 
 Highlights of this version:
 
+* Branding changed from HAProxy Ingress to N42 Gateway 
 * Embedded HAProxy version update from 2.8 to 3.0.
 * Gateway API compliant implementation. Support of HTTPRoute, TLSRoute and TCPRoute APIs, although the last one does not have compliance tests yet.
 * Support of multiple HTTP(S) frontends on distinct TCP port number.
@@ -22,18 +33,24 @@ Highlights of this version:
 
 Breaking backward compatibility from v0.16:
 
+* The branding update need a special attention when upgrading to `v0.17.0-alpha.3` and newer, see the [migration guide](https://n42-gateway.github.io/v0.17/docs/migration-guide/).
 * HAProxy versions older than 2.6 are no longer supported in the External HAProxy deployment.
-* Gateway API updated from v1.0 to v1.5, which drops support to Gateway and HTTPRoute v1alpha2.
+* Gateway API updated from v1.0 to v1.6, which drops support to Gateway and HTTPRoute v1alpha2.
 * The default HTTP and HTTPS frontends are created only if an Ingress or Gateway API resource references it. The old behavior of always having HTTP(S) binding their TCP ports can be achieved using [`create-default-frontends`](https://haproxy-ingress.github.io/v0.17/docs/configuration/keys/#bind-port) configuration key.
 * All the CORS response headers are removed if Origin request header is missing or not authorized. This improves compliance and simplifies the configuration.
-* Plain HTTP Passthrough, formerly known as Fronting Proxy, was redesigned for the multiple HTTP(S) frontends support, and its configuration was simplified. Give it a special attention during tests and check the new documentation: [HTTP Passthrough](https://haproxy-ingress.github.io/v0.17/docs/configuration/keys/#http-passthrough)
+* Plain HTTP Passthrough, formerly known as Fronting Proxy, was redesigned for the multiple HTTP(S) frontends support, and its configuration was simplified. Give it a special attention during tests and check the new documentation: [HTTP Passthrough](https://haproxy-ingress.github.io/v0.17/docs/configuration/keys/#http-passthrough).
 
 A refactor was made on internal HAProxy model to support multiple HTTP(S) frontends, this is the biggest refactor since the v0.8 one in the converter code. Although there are no known backward compatibility changes beyond the ones already reported, it is suggested to thoroughly observe v0.17 on test and staging environments before migrate to production. Do not hesitate to file an issue if you find a misbehavior.
 
 ## Contributors
 
+* Alexander Stephan ([alexanderstephan](https://github.com/alexanderstephan))
+* Arthur Le Roux ([arthlr](https://github.com/arthlr))
 * Ask Bjørn Hansen ([abh](https://github.com/abh))
 * Bagas Purwa S ([bapung](https://github.com/bapung))
+* Christian Menges ([Garfield96](https://github.com/Garfield96))
+* CodeOpsAI ([CodeOpsAI](https://github.com/CodeOpsAI))
+* hayden ([onelapahead](https://github.com/onelapahead))
 * Ian Roberts ([ianroberts](https://github.com/ianroberts))
 * Joao Morais ([jcmoraisjr](https://github.com/jcmoraisjr))
 * Josh Soref ([jsoref](https://github.com/jsoref))
@@ -41,7 +58,97 @@ A refactor was made on internal HAProxy model to support multiple HTTP(S) fronte
 * Mia Mouret ([mia-mouret](https://github.com/mia-mouret))
 * Nadia Santalla ([nadiamoe](https://github.com/nadiamoe))
 * Pedro Gonçalves ([PerGon](https://github.com/PerGon))
+* Silvio Knizek ([killermoehre](https://github.com/killermoehre))
 * Vladimir Kozhukalov ([kozhukalov](https://github.com/kozhukalov))
+
+# v0.17.0-alpha.3
+
+## Reference (a3)
+
+* Release date: `2026-09-16`
+* Helm chart: `--version 0.17.0-alpha.3 --devel`
+* Image (GHCR): `ghcr.io/n42-gateway/n42-gateway:v0.17.0-alpha.3`
+* Image (Quay): `quay.io/n42-gateway/n42-gateway:v0.17.0-alpha.3`
+* Embedded HAProxy version: `3.0.27`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.17.0-alpha.3`
+
+## Release notes (a3)
+
+This is the third tag of the v0.17 branch, which brings a major update:
+
+- Branding changed from HAProxy Ingress to N42 Gateway. This update impacts new deployments. The [migration guide](https://n42-gateway.github.io/v0.17/docs/migration-guide/) covers some upgrade scenarios, with or without backward compatibility, with or without high availability.
+
+Some other notable features or improvements were added:
+
+- New `--full-controller-name` and `--configuration-class` command-line options help to migrate from HAProxy Ingress without breaking backward compatibility.
+- Christian added a controller-runtime configuration that strips managed fields from the cached objects, which reduces memory usage.
+- hayden added enforcement mode configuration keys, allowing to configure distinct responses on allow and deny lists. [doc](https://n42-gateway.github.io/v0.17/docs/configuration/keys/#allowlist).
+- Alexander added a new configuration key, which performs backend server rename on dynamic scaling using pre-allocated slots and naming as `IP` or `POD`. This option requires HAProxy 3.5 dev2 or newer. [doc](https://n42-gateway.github.io/v0.17/docs/configuration/keys/#backend-server-naming).
+
+Some fixes were also merged:
+
+- A number of CVEs from Go's stdlib and N42 Gateway dependencies.
+- Arthur reported and fixed the repopulation of the IP address on Ingress and Gateway status when a single replica looses the leader election.
+- CodeOpsAI fixed a missing permission on the close issue scheduler.
+- Christian found the source of a race in the test code and reenabled the `-race` command-line option in the test run.
+- Silvio fixed the rendering of a link in the home page.
+
+Dependencies:
+
+- embedded haproxy from 3.0.23 to 3.0.27
+- client-go from v0.36.1 to v0.37.0
+- go from 1.26.3 to 1.26.8
+
+## Improvements (a3)
+
+New features and improvements since `v0.17.0-alpha.2`:
+
+* Bump golang.org/x/crypto from 0.51.0 to 0.52.0 [#1484](https://github.com/n42-gateway/n42-gateway/pull/1484) (dependabot[bot])
+* add full controller name command-line option [#1487](https://github.com/n42-gateway/n42-gateway/pull/1487) (jcmoraisjr)
+  * Command-line options:
+    * [`--full-controller-name`](https://n42-gateway.github.io/v0.17/docs/configuration/command-line/#ingress-class)
+* Bump golang.org/x/crypto from 0.52.0 to 0.53.0 [#1489](https://github.com/n42-gateway/n42-gateway/pull/1489) (dependabot[bot])
+* Bump actions/setup-go from 6 to 7 [#1504](https://github.com/n42-gateway/n42-gateway/pull/1504) (dependabot[bot])
+* Bump actions/stale from 10 to 11 [#1510](https://github.com/n42-gateway/n42-gateway/pull/1510) (dependabot[bot])
+* Bump k8s.io/client-go from 0.36.1 to 0.36.3 [#1507](https://github.com/n42-gateway/n42-gateway/pull/1507) (dependabot[bot])
+* Bump github.com/go-logr/logr from 1.4.3 to 1.4.4 [#1505](https://github.com/n42-gateway/n42-gateway/pull/1505) (dependabot[bot])
+* Bump golang.org/x/crypto from 0.53.0 to 0.55.0 [#1502](https://github.com/n42-gateway/n42-gateway/pull/1502) (dependabot[bot])
+* Bump sigs.k8s.io/gateway-api from 1.5.1 to 1.6.1 [#1508](https://github.com/n42-gateway/n42-gateway/pull/1508) (dependabot[bot])
+* Bump github.com/prometheus/client_golang from 1.23.2 to 1.24.1 [#1514](https://github.com/n42-gateway/n42-gateway/pull/1514) (dependabot[bot])
+* Bump github.com/stretchr/testify from 1.11.1 to 1.12.0 [#1515](https://github.com/n42-gateway/n42-gateway/pull/1515) (dependabot[bot])
+* Bump k8s.io/client-go from 0.36.3 to 0.36.4 [#1516](https://github.com/n42-gateway/n42-gateway/pull/1516) (dependabot[bot])
+* Bump github.com/stretchr/testify from 1.12.0 to 1.12.1 [#1517](https://github.com/n42-gateway/n42-gateway/pull/1517) (dependabot[bot])
+* N42 Gateway branding - Step 1/2 [#1523](https://github.com/n42-gateway/n42-gateway/pull/1523) (jcmoraisjr)
+* Strip managed fields from cached objects [#1526](https://github.com/n42-gateway/n42-gateway/pull/1526) (Garfield96)
+* Add configuration class command-line option [#1527](https://github.com/n42-gateway/n42-gateway/pull/1527) (jcmoraisjr)
+  * Command-line options:
+    * [`--configuration-class`](https://n42-gateway.github.io/v0.17/docs/configuration/command-line/#configuration-class)
+* Enforcement mode for configuring either (default) deny/403 behavior, reject, or the silent-drop behavior like WAF [#1512](https://github.com/n42-gateway/n42-gateway/pull/1512) (onelapahead)
+  * Configuration keys:
+    * [`allowlist-enforcement-mode`](https://n42-gateway.github.io/v0.17/docs/configuration/keys/#allowlist)
+    * [`denylist-enforcement-mode`](https://n42-gateway.github.io/v0.17/docs/configuration/keys/#allowlist)
+* Bump k8s.io/client-go from 0.36.4 to 0.37.0 [#1521](https://github.com/n42-gateway/n42-gateway/pull/1521) (dependabot[bot])
+* Make server rename part of dynamic updates [#1481](https://github.com/n42-gateway/n42-gateway/pull/1481) (alexanderstephan)
+  * Configuration keys:
+    * [`backend-server-rename`](https://n42-gateway.github.io/v0.17/docs/configuration/keys/#backend-server-naming)
+* N42 Gateway branding - Step 2/2 [#1528](https://github.com/n42-gateway/n42-gateway/pull/1528) (jcmoraisjr)
+* Bump golang.org/x/crypto from 0.55.0 to 0.57.0 [#1533](https://github.com/n42-gateway/n42-gateway/pull/1533) (dependabot[bot])
+* exercise the new image hub credentials [88f2c59](https://github.com/n42-gateway/n42-gateway/commit/88f2c59707716ce0fd0bc7019d88eed2191e73f4) (Joao Morais)
+* bump go from 1.26.3 to 1.26.8 [0a209a4](https://github.com/n42-gateway/n42-gateway/commit/0a209a47f25457e32d09be383435741ee71f55d4) (Joao Morais)
+* bump haproxy from 3.0.23 to 3.0.27 [ce38468](https://github.com/n42-gateway/n42-gateway/commit/ce3846848e7862d14590b6b518e9341311f73f62) (Joao Morais)
+* bump dependencies [404a62f](https://github.com/n42-gateway/n42-gateway/commit/404a62f85f62f3923060b806fb7c7a286c56bed7) (Joao Morais)
+
+Chart improvements since `v0.17.0-alpha.2`:
+
+* N42 Gateway branding [#118](https://github.com/n42-gateway/charts/pull/118) (jcmoraisjr)
+
+## Fixes (a3)
+
+* Fix not rendered markdown [#1480](https://github.com/n42-gateway/n42-gateway/pull/1480) (killermoehre)
+* fix: repopulate ingress status after leader re-acquisition [#1486](https://github.com/n42-gateway/n42-gateway/pull/1486) (arthlr)
+* Fix permissions-missing in closeissues.yaml [#1498](https://github.com/n42-gateway/n42-gateway/pull/1498) (CodeOpsAI)
+* Fix data race in TestHAProxyProcsLoop and enable -race flag for tests [#1525](https://github.com/n42-gateway/n42-gateway/pull/1525) (Garfield96)
+* fix ghcr authentication [4b52fab](https://github.com/n42-gateway/n42-gateway/commit/4b52fab2f1d55c76b0b655f081f602c89c8d374e) (Joao Morais)
 
 # v0.17.0-alpha.2
 
