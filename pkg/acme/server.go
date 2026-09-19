@@ -65,7 +65,7 @@ func (s *server) Listen(stopCh chan struct{}) error {
 			s.logger.Warn("acme: url token not found: domain=%s uri=%s", host, uri)
 			return
 		}
-		fmt.Fprintf(w, token)
+		fmt.Fprintf(w, "%s", token)
 		s.logger.Info("acme: request token: domain=%s uri=%s", host, uri)
 	})
 	s.server = &http.Server{Addr: s.socket, Handler: handler}
