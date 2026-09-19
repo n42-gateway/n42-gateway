@@ -1,3 +1,4 @@
+//go:debug default=go1.25
 package integration_test
 
 import (
