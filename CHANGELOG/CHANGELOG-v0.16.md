@@ -4,6 +4,10 @@
 * [Upgrade notes - read before upgrade from v0.15!](#upgrade-notes)
   * [Deprecated command-line options](#deprecated-command-line-options)
 * [Contributors](#contributors)
+* [v0.16.2](#v0162)
+  * [Reference](#reference-r2)
+  * [Release notes](#release-notes-r2)
+  * [Fixes and Improvements](#fixes-and-improvements-r2)
 * [v0.16.1](#v0161)
   * [Reference](#reference-r1)
   * [Release notes](#release-notes-r1)
@@ -63,6 +67,44 @@ The `--enable-endpointslices-api` command-line option was deprecated on v0.16 an
 * Pedro Gonçalves ([PerGon](https://github.com/PerGon))
 * Till! ([till](https://github.com/till))
 * Vladimir Kozhukalov ([kozhukalov](https://github.com/kozhukalov))
+
+# v0.16.2
+
+## Reference (r2)
+
+* Changelog and release notes: [v0.16.2](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.16.md#v0162)
+* Release date: `2026-09-20`
+* Helm chart: `--version 0.16.2`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.16.2`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.16.2`
+* Embedded HAProxy version: `2.8.28`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.16.2`
+
+## Release notes (r2)
+
+This release updates controller branding from HAProxy Ingress to N42 Gateway. The update is limited to the N42 Gateway site, and only related with the component name. Neither the codebase nor the technical documentation were impacted.
+
+This release also fixes some issues found on v0.16 branch:
+
+- Updating base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+- Arthur reported and fixed the repopulation of the IP address on Ingress and Gateway status when a single replica looses the leader election.
+- Silvio fixed the rendering of a link in the home page.
+
+Changes in dependencies:
+
+- embedded haproxy from 2.8.22 to 2.8.28
+- go from 1.25.9 to 1.26.8
+
+## Fixes and improvements (r2)
+
+New fixes and improvements since `v0.16.1`:
+
+* Fix not rendered markdown [#1480](https://github.com/n42-gateway/n42-gateway/pull/1480) (killermoehre)
+* fix: repopulate ingress status after leader re-acquisition [#1486](https://github.com/n42-gateway/n42-gateway/pull/1486) (arthlr)
+* release-0.16: N42 Gateway branding - Step 1/2 [#1524](https://github.com/n42-gateway/n42-gateway/pull/1524) (jcmoraisjr)
+* bump go from 1.25.9 to 1.26.8 [d6a2178](https://github.com/n42-gateway/n42-gateway/commit/d6a2178adc3453f76633b6f757ef91345a9c43cf) (Joao Morais)
+* update dependencies addressing a number of CVEs [bc6cfea](https://github.com/n42-gateway/n42-gateway/commit/bc6cfea70df98edefe13e8d30ddc55d73c87543e) (Joao Morais)
+* bump haproxy from 2.8.22 to 2.8.28 [4688215](https://github.com/n42-gateway/n42-gateway/commit/46882155831df13547a5e4589103b558fff63304) (Joao Morais)
 
 # v0.16.1
 
