@@ -6,6 +6,10 @@
   * [Upgrading with embedded Acme](#upgrading-with-embedded-acme)
   * [Upgrading with custom repositories](#upgrading-with-custom-repositories)
 * [Contributors](#contributors)
+* [v0.15.5](#v0155)
+  * [Reference](#reference-r5)
+  * [Release notes](#release-notes-r5)
+  * [Fixes and improvements](#fixes-and-improvements-r5)
 * [v0.15.4](#v0154)
   * [Reference](#reference-r4)
   * [Release notes](#release-notes-r4)
@@ -152,6 +156,39 @@ See the full syntax and default values in the [README.md](https://github.com/hap
 * RT ([hedgieinsocks](https://github.com/hedgieinsocks))
 * tomklapka ([tomklapka](https://github.com/tomklapka))
 * Tomasz Zurkowski ([doriath](https://github.com/doriath))
+
+# v0.15.5
+
+## Reference (r5)
+
+* Changelog and release notes: [v0.15.5](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.15.md#v0155)
+* Release date: `2026-09-20`
+* Helm chart: `--version 0.15.5`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.15.5`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.15.5`
+* Embedded HAProxy version: `2.6.33`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.15.5`
+
+## Release notes (r5)
+
+This release fixes some issues found on v0.15 branch:
+
+- Updating base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+- Arthur reported and fixed the repopulation of the IP address on Ingress and Gateway status when a single replica looses the leader election.
+
+Changes in dependencies:
+
+- embedded haproxy from 2.6.27 to 2.6.33
+- go from 1.25.9 to 1.26.8
+
+## Fixes and improvements (r5)
+
+New fixes and improvements since `v0.15.4`:
+
+* fix: repopulate ingress status after leader re-acquisition [#1486](https://github.com/n42-gateway/n42-gateway/pull/1486) (arthlr)
+* bump go from 1.25.9 to 1.26.8 [3aef79e](https://github.com/n42-gateway/n42-gateway/commit/3aef79ee2bc44dcb8d4273d7d84b132bd013f198) (Joao Morais)
+* update dependencies addressing a number of CVEs [77d5526](https://github.com/n42-gateway/n42-gateway/commit/77d5526c880674273a9464ab7efa8516d713cb0d) (Joao Morais)
+* bump haproxy from 2.6.27 to 2.6.33 [6fce494](https://github.com/n42-gateway/n42-gateway/commit/6fce4944b464f156e9bd6a68862f09b44dfc1c2d) (Joao Morais)
 
 # v0.15.4
 
