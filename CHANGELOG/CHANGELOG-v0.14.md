@@ -3,6 +3,10 @@
 * [Major improvements](#major-improvements)
 * [Upgrade notes - read before upgrade from v0.13!](#upgrade-notes)
 * [Contributors](#contributors)
+* [v0.14.13](#v01413)
+  * [Reference](#reference-r13)
+  * [Release notes](#release-notes-r13)
+  * [Fixes and improvements](#fixes-and-improvements-r13)
 * [v0.14.12](#v01412)
   * [Reference](#reference-r12)
   * [Release notes](#release-notes-r12)
@@ -128,6 +132,47 @@ Breaking backward compatibility from v0.13:
 * ssanders1449 ([ssanders1449](https://github.com/ssanders1449))
 * Wojciech Chojnowski ([DCkQ6](https://github.com/DCkQ6))
 * wolf-cosmose ([wolf-cosmose](https://github.com/wolf-cosmose))
+
+# v0.14.13
+
+## Reference (r13)
+
+* Changelog and release notes: [v0.14.13](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.14.md#v01413)
+* Release date: `2026-09-20`
+* Helm chart: `--version 0.14.13`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.14.13`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.14.13`
+* Embedded HAProxy version: `2.4.36`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.14.13`
+
+## Release notes (r13)
+
+This release fixes some issues found on v0.14 branch:
+
+- Updating base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+- Florian reported that idle metric collector can crash the controller if haproxy eventually reports more than 100 on its metric. This happens because the controller did not check the boundaries and a counter metric would become negative, making Prometheus client to crash. See also https://github.com/haproxy/haproxy/issues/3339.
+- Logan reported that a PDB resource was always being created despite of being configured, this happened because chart was comparing the `maxUnavailable` to a declared zero, which is also the value when it is not configured.
+
+Dependencies:
+
+- embedded haproxy from 2.4.31 to 2.4.36
+- go from 1.25.8 to 1.26.8
+
+## Fixes and improvements (r13)
+
+Fixes and improvements since `v0.14.12`:
+
+* doc: fix default value for watch gateway [#1457](https://github.com/n42-gateway/n42-gateway/pull/1457) (jcmoraisjr)
+* pin dependencies from makefile [#1467](https://github.com/n42-gateway/n42-gateway/pull/1467) (jcmoraisjr)
+* adding boundary in the idle_pct metric [#1456](https://github.com/n42-gateway/n42-gateway/pull/1456) (jcmoraisjr)
+* Bump golang.org/x security dependencies on release-0.14 [#1520](https://github.com/n42-gateway/n42-gateway/pull/1520) (githubMichaelYang)
+* bump go from 1.25.8 to 1.26.8 [0929dc2](https://github.com/n42-gateway/n42-gateway/commit/0929dc2fa342eaa2879ebbd981902b84674c678e) (Joao Morais)
+* update dependencies addressing a number of CVEs [8296124](https://github.com/n42-gateway/n42-gateway/commit/8296124ff7ebfe5d0ffc7b7a0ae0b3676b637b76) (Joao Morais)
+* bump haproxy from 2.4.31 to 2.4.36 [2a23e7e](https://github.com/n42-gateway/n42-gateway/commit/2a23e7e32dade4891d34eeccfec14390fe49508c) (Joao Morais)
+
+Chart improvements since `v0.14.12`:
+
+* create pdb only if max unavailable is defined [#108](https://github.com/n42-gateway/charts/pull/108) (jcmoraisjr)
 
 # v0.14.12
 
