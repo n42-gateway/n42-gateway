@@ -3,6 +3,10 @@
 * [Major improvements](#major-improvements)
 * [Upgrade notes - read before upgrade from v0.12!](#upgrade-notes)
 * [Contributors](#contributors)
+* [v0.13.20](#v01320)
+  * [Reference](#reference-r20)
+  * [Release notes](#release-notes-r20)
+  * [Fixes and improvements](#fixes-and-improvements-r20)
 * [v0.13.19](#v01319)
   * [Reference](#reference-r19)
   * [Release notes](#release-notes-r19)
@@ -151,6 +155,39 @@ Breaking backward compatibility from v0.12
 * Roman Gherta ([rgherta](https://github.com/rgherta))
 * ssanders1449 ([ssanders1449](https://github.com/ssanders1449))
 * Wojciech Chojnowski ([DCkQ6](https://github.com/DCkQ6))
+
+# v0.13.20
+
+## Reference (r20)
+
+* Changelog and release notes: [v0.13.20](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.13.md#v01320)
+* Release date: `2026-09-20`
+* Helm chart: `--version 0.13.20`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.13.20`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.13.20`
+* Embedded HAProxy version: `2.4.36`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.13.20`
+
+## Release notes (r20)
+
+This release fixes some issues found on v0.13 branch:
+
+- Updating base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+- Florian reported that idle metric collector can crash the controller if haproxy eventually reports more than 100 on its metric. This happens because the controller did not check the boundaries and a counter metric would become negative, making Prometheus client to crash. See also https://github.com/haproxy/haproxy/issues/3339.
+
+Dependencies:
+
+- embedded haproxy from 2.4.30 to 2.4.36
+- go from 1.23.12 to 1.26.8
+
+## Fixes and improvements (r20)
+
+Fixes and improvements since `v0.13.19`:
+
+* adding boundary in the idle_pct metric [#1456](https://github.com/n42-gateway/n42-gateway/pull/1456) (jcmoraisjr)
+* bump go from 1.23.12 to 1.26.8 [b7afea6](https://github.com/n42-gateway/n42-gateway/commit/b7afea6af12c8d080accd49ca9d3446bac7fe325) (Joao Morais)
+* update dependencies addressing a number of CVEs [b01e29b](https://github.com/n42-gateway/n42-gateway/commit/b01e29b268fdfa3e26f28f75ddfa9c1620018e0f) (Joao Morais)
+* bump haproxy from 2.4.30 to 2.4.36 [ea2169e](https://github.com/n42-gateway/n42-gateway/commit/ea2169e7eedaa9093a0424b76f1c973bf9ba2770) (Joao Morais)
 
 # v0.13.19
 
