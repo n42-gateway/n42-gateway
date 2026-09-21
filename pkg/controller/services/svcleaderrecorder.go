@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/events"
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/recorder"
 
 	"github.com/n42-gateway/n42-gateway/pkg/controller/config"
 )
@@ -87,10 +88,27 @@ func (r *recorderProvider) GetEventRecorderFor(name string) record.EventRecorder
 	})
 }
 
-func (r *recorderProvider) GetEventRecorder(name string) events.EventRecorder {
+func (r *recorderProvider) GetEventRecorder(name string) recorder.EventRecorder {
 	broadcaster := events.NewBroadcaster(&events.EventSinkImpl{Interface: r.evCli})
 	if err := broadcaster.StartRecordingToSinkWithContext(r.ctx); err != nil {
 		r.log.Error(err, "error starting recording for broadcaster")
 	}
-	return broadcaster.NewRecorder(r.scheme, name)
+	rec := broadcaster.NewRecorder(r.scheme, name)
+	return &eventRecorder{
+		evrec: rec,
+		anrec: rec.(events.AnnotatedEventRecorder),
+	}
+}
+
+type eventRecorder struct {
+	evrec events.EventRecorderLogger
+	anrec events.AnnotatedEventRecorder
+}
+
+func (r *eventRecorder) Eventf(regarding runtime.Object, related runtime.Object, eventtype, reason, action, note string, args ...any) {
+	r.evrec.Eventf(regarding, related, eventtype, reason, action, note, args...)
+}
+
+func (r *eventRecorder) AnnotatedEventf(regarding runtime.Object, related runtime.Object, annotations map[string]string, eventtype, reason, action, note string, args ...any) {
+	r.anrec.AnnotatedEventf(regarding, related, annotations, eventtype, reason, action, note, args...)
 }
