@@ -1,6 +1,7 @@
 acmeexclusive
 allowcfg
 annprefix
+anrec
 appfail
 arodland
 Artyom
@@ -119,6 +120,9 @@ Equifax
 errexit
 errgroup
 errorfile
+Eventf
+eventtype
+evrec
 expapps
 expback
 expcode
