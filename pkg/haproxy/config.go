@@ -241,6 +241,7 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 		buildCommonMaps(commonMaps)
 	}
 	hasVarNamespace := f.HasVarNamespace()
+	wildcardHasRootRedirect := f.WildcardHasRootRedirect()
 	defaultHost := f.DefaultHost()
 	if defaultHost != nil && !defaultHost.SSLPassthrough {
 		for _, path := range defaultHost.Paths {
@@ -336,8 +337,6 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 				}
 			}
 		}
-		// TODO wildcard/alias/alias-regex hostname can overlap
-		// a configured domain which doesn't have rootRedirect
 		if host.RootRedirect != "" {
 			// looking for root path configuration - if ssl redirect is enabled,
 			// we need to redirect to https before redirect the path.
@@ -357,6 +356,9 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 				httpMaps.RedirRootSSLMap.AddHostnameMapping(host.Hostname, host.ExtendedWildcard, "")
 			}
 			commonMaps.RedirFromRootMap.AddHostnameMapping(host.Hostname, host.ExtendedWildcard, host.RootRedirect)
+		} else if wildcardHasRootRedirect {
+			// fill other hostnames to avoid overlap on regex based hostname matches
+			commonMaps.RedirFromRootMap.AddHostnameMapping(host.Hostname, host.ExtendedWildcard, "-")
 		}
 		if !f.IsHTTPS {
 			continue

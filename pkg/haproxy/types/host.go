@@ -18,6 +18,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 
 	"k8s.io/utils/ptr"
 
@@ -108,6 +109,10 @@ func (h *Host) Equals(other *Host) bool {
 		return false
 	}
 	return utils.StructEquals(h, other, "Paths")
+}
+
+func (h *Host) IsWildcard() bool {
+	return strings.HasPrefix(h.Hostname, "*.")
 }
 
 // Headers ...
