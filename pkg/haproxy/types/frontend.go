@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strings"
 )
 
 func CreateFrontends(ipMode IPMode) *Frontends {
@@ -345,6 +346,16 @@ func (f *Frontend) HasVarNamespace() bool {
 		}
 	}
 	return false
+}
+
+// WildcardHavingRootRedirect ...
+func (f *Frontend) WildcardHavingRootRedirect() (hostnameSuffix []string) {
+	for _, host := range f.hosts {
+		if host.RootRedirect != "" && strings.HasPrefix(host.Hostname, "*.") {
+			hostnameSuffix = append(hostnameSuffix, host.Hostname[2:])
+		}
+	}
+	return hostnameSuffix
 }
 
 // AcquireAuthBackendName ...

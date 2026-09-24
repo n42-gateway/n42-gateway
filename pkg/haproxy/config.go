@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -241,6 +242,7 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 		buildCommonMaps(commonMaps)
 	}
 	hasVarNamespace := f.HasVarNamespace()
+	wildcardHavingRootRedirect := f.WildcardHavingRootRedirect()
 	defaultHost := f.DefaultHost()
 	if defaultHost != nil && !defaultHost.SSLPassthrough {
 		for _, path := range defaultHost.Paths {
@@ -336,8 +338,6 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 				}
 			}
 		}
-		// TODO wildcard/alias/alias-regex hostname can overlap
-		// a configured domain which doesn't have rootRedirect
 		if host.RootRedirect != "" {
 			// looking for root path configuration - if ssl redirect is enabled,
 			// we need to redirect to https before redirect the path.
@@ -347,7 +347,7 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 					// any root path `/` is fine ...
 					redir = path.SSLRedirect
 					if !path.Link.IsComposeMatch() {
-						// ... but gives precedence for a root path `/` without method, header or cookie matching
+						// ... but gives preference for a root path `/` without method, header or cookie matching
 						return redir
 					}
 				}
@@ -357,6 +357,22 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 				httpMaps.RedirRootSSLMap.AddHostnameMapping(host.Hostname, host.ExtendedWildcard, "")
 			}
 			commonMaps.RedirFromRootMap.AddHostnameMapping(host.Hostname, host.ExtendedWildcard, host.RootRedirect)
+		} else if len(wildcardHavingRootRedirect) > 0 {
+			// opt-out from matching hostnames without root redirect to avoid unintended redirect due to overlap
+			matchingRedirectWildcard := slices.ContainsFunc(wildcardHavingRootRedirect, func(suffix string) bool {
+				suffix = "." + suffix
+				if !strings.HasSuffix(host.Hostname, suffix) {
+					return false
+				}
+				if host.ExtendedWildcard {
+					return true
+				}
+				prefix := strings.TrimSuffix(host.Hostname, suffix)
+				return !strings.Contains(prefix, ".")
+			})
+			if matchingRedirectWildcard {
+				commonMaps.RedirFromRootMap.AddHostnameMapping(host.Hostname, host.ExtendedWildcard, "-")
+			}
 		}
 		if !f.IsHTTPS {
 			continue
