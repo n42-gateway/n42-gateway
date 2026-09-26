@@ -5653,10 +5653,11 @@ func TestUserlist(t *testing.T) {
 		users []hatypes.User
 	}
 	testCase := []struct {
-		lists    []list
-		listname string
-		realm    string
-		config   string
+		lists      []list
+		alwaysDeny bool
+		listname   string
+		realm      string
+		config     string
 	}{
 		{
 			lists: []list{
@@ -5712,6 +5713,9 @@ userlist default_auth1
 userlist default_auth2
     user usr2 password xxxx`,
 		},
+		{
+			alwaysDeny: true,
+		},
 	}
 	for _, test := range testCase {
 		c := setup(t)
@@ -5727,6 +5731,7 @@ userlist default_auth2
 			c.config.Userlists().Replace(list.name, list.users)
 		}
 		path.AuthHTTP = hatypes.AuthHTTP{
+			AlwaysDeny:   test.alwaysDeny,
 			UserlistName: test.listname,
 			Realm:        test.realm,
 		}
@@ -5734,6 +5739,13 @@ userlist default_auth2
 		var realm string
 		if test.realm != "" {
 			realm = fmt.Sprintf(` realm "%s"`, test.realm)
+		}
+
+		var auth string
+		if test.alwaysDeny {
+			auth = "http-request deny deny_status 403 if { var(txn.pathID) -m str path02 }"
+		} else {
+			auth = "http-request auth" + realm + " if { var(txn.pathID) -m str path02 } !{ http_auth(" + test.listname + ") }"
 		}
 
 		c.Update()
@@ -5745,7 +5757,7 @@ backend d1_app_8080
     # path01 = d1.local/
     # path02 = d1.local/admin
     http-request set-var(txn.pathID) var(req.base),lower,map_beg(/etc/haproxy/maps/_back_d1_app_8080_front_http_req__begin.map)
-    http-request auth` + realm + ` if { var(txn.pathID) -m str path02 } !{ http_auth(` + test.listname + `) }
+    ` + auth + `
     server s1 172.17.0.11:8080 weight 100
 <<backends-default>>
 <<frontend-http>>

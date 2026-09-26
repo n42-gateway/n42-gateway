@@ -629,13 +629,19 @@ backend {{ $backend.ID }}
 {{- /*------------------------------------*/}}
 {{- $authHTTPCfg := $backend.PathConfig "AuthHTTP" }}
 {{- range $i, $authHTTP := $authHTTPCfg.Items }}
-{{- if $authHTTP.UserlistName }}
+{{- if or $authHTTP.UserlistName $authHTTP.AlwaysDeny }}
 {{- range $pathIDs := $authHTTPCfg.PathIDs $i }}
+{{- if $authHTTP.AlwaysDeny }}
+    http-request deny deny_status 403
+{{- else }}
     http-request auth
         {{- if $authHTTP.Realm }} realm "{{ $authHTTP.Realm }}"{{ end }}
+{{- end }}
         {{- "" }} if{{ if and $backend.HasCorsEnabled }} !METH_OPTIONS{{ end }}
         {{- if $pathIDs }} { var(txn.pathID) -m str {{ $pathIDs }} }{{ end }}
+{{- if $authHTTP.UserlistName }}
         {{- "" }} !{ http_auth({{ $authHTTP.UserlistName }}) }
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

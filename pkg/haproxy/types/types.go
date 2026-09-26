@@ -962,6 +962,7 @@ type AuthExternal struct {
 
 // AuthHTTP ...
 type AuthHTTP struct {
+	AlwaysDeny   bool
 	UserlistName string
 	Realm        string
 }
