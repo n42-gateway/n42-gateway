@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
@@ -336,6 +337,64 @@ func TestIntegrationIngress(t *testing.T) {
 		)
 		assert.True(t, res.EchoResponse.Parsed)
 		assert.Equal(t, commonReqHeaders, res.EchoResponse.ReqHeaders)
+	})
+
+	t.Run("should deny misconfigured basic auth", func(t *testing.T) {
+		t.Parallel()
+		svc := f.CreateService(ctx, t, httpServerPort)
+		secret := f.CreateSecret(ctx, t, map[string][]byte{"auth": []byte("admin::123")})
+		_, hostnameOK := f.CreateIngress(ctx, t, svc,
+			options.AddConfigKeyAnnotation(ingtypes.BackAuthSecret, secret.Name),
+		)
+		_, hostnameMisconfig := f.CreateIngress(ctx, t, svc,
+			options.AddConfigKeyAnnotation(ingtypes.BackAuthSecret, "_not_found"),
+		)
+
+		testCases := map[string]struct {
+			hostname      string
+			addClientAuth bool
+			responseCode  int
+		}{
+			"misconfigured and no client auth": {
+				hostname:      hostnameMisconfig,
+				addClientAuth: false,
+				responseCode:  http.StatusForbidden,
+			},
+			"misconfigured and having client auth": {
+				hostname:      hostnameMisconfig,
+				addClientAuth: true,
+				responseCode:  http.StatusForbidden,
+			},
+			"configured and no client auth": {
+				hostname:      hostnameOK,
+				addClientAuth: false,
+				responseCode:  http.StatusUnauthorized,
+			},
+			"configured and having client auth": {
+				hostname:      hostnameOK,
+				addClientAuth: true,
+				responseCode:  http.StatusOK,
+			},
+		}
+
+		usrPassMD5 := base64.StdEncoding.EncodeToString([]byte("admin:123"))
+
+		for name, test := range testCases {
+			t.Run(name, func(t *testing.T) {
+				opts := []options.Request{options.ExpectResponseCode(test.responseCode)}
+				if test.addClientAuth {
+					opts = append(opts, options.CustomRequest(func(req *http.Request) {
+						req.Header.Set("authorization", "Basic "+usrPassMD5)
+					}))
+				}
+				res := f.Request(ctx, t, http.MethodGet, test.hostname, "/", opts...)
+				if test.responseCode == http.StatusOK {
+					assert.True(t, res.EchoResponse.Parsed)
+				} else {
+					assert.False(t, res.EchoResponse.Parsed)
+				}
+			})
+		}
 	})
 
 	t.Run("should deny 496 mTLS with no client crt", func(t *testing.T) {

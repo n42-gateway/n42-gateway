@@ -298,6 +298,7 @@ maxqueue
 mergo
 metricsmock
 mhandler
+Misconfig
 missingcrt
 mitchellh
 mkpasswd
