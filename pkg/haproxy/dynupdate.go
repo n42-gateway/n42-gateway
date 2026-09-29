@@ -320,7 +320,9 @@ func (d *dynUpdater) dynamicallySyncSlots(pair *backendPair) bool {
 			updated = false
 		} else if wantRename && desiredName != empty[i].Name {
 			if !d.execRenameEndpoint(curBack.ID, added[i], desiredName) {
-				// rename failed; leave the slot disabled and let a reload fix it
+				// rename failed; leave the slot disabled and let a reload fix
+				// it, but keep the in-memory name correct for that reload
+				added[i].Name = desiredName
 				updated = false
 				continue
 			}
