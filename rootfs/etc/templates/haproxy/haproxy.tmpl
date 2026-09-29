@@ -1293,7 +1293,7 @@ frontend {{ $frontend.Name }}
 {{- end }}
     http-request redirect location %[var(req.rootredir)]
         {{- "" }} if{{ if $acmeexclusive }} !acme-challenge{{ end }}
-        {{- "" }} { path / } { var(req.rootredir) -m found }
+        {{- "" }} { path / } !{ var(req.rootredir) -m str -- - }
 {{- end }}
 
 {{- /*------------------------------------*/}}
@@ -1432,7 +1432,7 @@ frontend {{ $httpsFrontendName }}
         {{- "" }},map_{{ $match.Method }}({{ $match.Filename }})
         {{- if not $match.First }} if !{ var(req.rootredir) -m found }{{ end }}
 {{- end }}
-    http-request redirect location %[var(req.rootredir)] if { path / } { var(req.rootredir) -m found }
+    http-request redirect location %[var(req.rootredir)] if { path / } !{ var(req.rootredir) -m str -- - }
 {{- end }}
 
 {{- /*------------------------------------*/}}

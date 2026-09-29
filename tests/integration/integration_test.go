@@ -146,6 +146,35 @@ func TestIntegrationIngress(t *testing.T) {
 		assert.Equal(t, "/app", res.HTTPResponse.Header.Get("location"))
 	})
 
+	t.Run("should not redirect app-root on wildcard overlap", func(t *testing.T) {
+		t.Parallel()
+
+		svc := f.CreateService(ctx, t, httpServerPort)
+
+		wildcardHostname := "*.d1.local"  // registered, matching both, has root redirect
+		subHostname := "sub.d1.local"     // not registered, matches wildcard
+		otherHostname := "other.d1.local" // registered, overlaps, does not have root redirect
+
+		_, _ = f.CreateIngress(ctx, t, svc,
+			options.CustomHostName(wildcardHostname),
+			options.AddConfigKeyAnnotation(ingtypes.HostAppRoot, "/app"),
+		)
+		_, _ = f.CreateIngress(ctx, t, svc,
+			options.CustomHostName(otherHostname),
+		)
+
+		resOther := f.Request(ctx, t, http.MethodGet, otherHostname, "/",
+			options.ExpectResponseCode(http.StatusOK),
+		)
+		assert.True(t, resOther.EchoResponse.Parsed)
+
+		resSub := f.Request(ctx, t, http.MethodGet, subHostname, "/",
+			options.ExpectResponseCode(http.StatusFound),
+		)
+		assert.False(t, resSub.EchoResponse.Parsed)
+		assert.Equal(t, "/app", resSub.HTTPResponse.Header.Get("location"))
+	})
+
 	t.Run("should rewrite URL", func(t *testing.T) {
 		t.Parallel()
 
