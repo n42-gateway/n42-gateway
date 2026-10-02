@@ -319,14 +319,14 @@ func (d *dynUpdater) dynamicallySyncSlots(pair *backendPair) bool {
 			}
 			updated = false
 		} else if wantRename && desiredName != empty[i].Name {
-			if !d.execRenameEndpoint(curBack.ID, added[i], desiredName) {
+			if !d.execRenameEndpoint(curBack, added[i], desiredName) {
 				// rename failed; leave the slot disabled and let a reload fix
 				// it, but keep the in-memory name correct for that reload
 				added[i].Name = desiredName
 				updated = false
 				continue
 			}
-		} else if !d.execEnableEndpoint(curBack.ID, nil, added[i]) || added[i].Label != "" {
+		} else if !d.execEnableEndpoint(curBack, nil, added[i]) || added[i].Label != "" {
 			updated = false
 		}
 	}
@@ -411,7 +411,7 @@ func (d *dynUpdater) checkEndpointPair(backend *hatypes.Backend, pair *epPair) b
 	}
 	if reflect.DeepEqual(&oldEPCopy, pair.cur) {
 		// TODO revisit Label check, this is related with blue/green deployment
-		return d.execEnableEndpoint(backend.ID, pair.old, pair.cur) && pair.old.Label == "" && pair.cur.Label == ""
+		return d.execEnableEndpoint(backend, pair.old, pair.cur) && pair.old.Label == "" && pair.cur.Label == ""
 	}
 
 	// cannot handle via enablement, need to either delete+add or reload,
@@ -516,8 +516,15 @@ func (d *dynUpdater) execDisableEndpoint(backname string, ep *hatypes.Endpoint) 
 	return true
 }
 
-func (d *dynUpdater) execEnableEndpoint(backname string, oldEP, curEP *hatypes.Endpoint) bool {
-	if !d.execSetAddrServer(backname, curEP) || !d.execSetWeightServer(backname, curEP) || !d.execEnableServer(backname, curEP) {
+func (d *dynUpdater) execEnableEndpoint(backend *hatypes.Backend, oldEP, curEP *hatypes.Endpoint) bool {
+	backname := backend.ID
+	if !d.execSetAddrServer(backname, curEP) {
+		return false
+	}
+	if d.shouldUpdateCheckPort(backend, oldEP, curEP) && !d.execSetCheckPortServer(backname, curEP) {
+		return false
+	}
+	if !d.execSetWeightServer(backname, curEP) || !d.execEnableServer(backname, curEP) {
 		return false
 	}
 	event := "updated"
@@ -526,6 +533,22 @@ func (d *dynUpdater) execEnableEndpoint(backname string, oldEP, curEP *hatypes.E
 	}
 	d.logger.InfoV(2, "%s endpoint '%s' weight '%d' on backend/server '%s/%s'", event, curEP.Target, curEP.Weight, backname, curEP.Name)
 	return true
+}
+
+func (d *dynUpdater) shouldUpdateCheckPort(backend *hatypes.Backend, oldEP, curEP *hatypes.Endpoint) bool {
+	return oldEP != nil &&
+		oldEP.Port != curEP.Port && // only if endpoint port changed;
+		backend.HealthCheck.Port == 0 && // ... and defaulting to the endpoint port;
+		backendHasHealthCheck(backend) // ... and health check is enabled.
+}
+
+func backendHasHealthCheck(backend *hatypes.Backend) bool {
+	// We are missing a flag stating whether the health check is enabled.
+	// This func follows the current check in the template counterpart:
+	// {{- if or $hc.Port $hc.Addr $hc.Interval $hc.RiseCount $hc.FallCount }}
+	// https://github.com/jcmoraisjr/haproxy-ingress/blob/bc62f480405f4a225735505a7c84d1bc340b468c/rootfs/etc/templates/haproxy/haproxy.tmpl#L940
+	hc := backend.HealthCheck
+	return hc.Port != 0 || hc.Addr != "" || hc.Interval != "" || hc.RiseCount != 0 || hc.FallCount != 0
 }
 
 func (d *dynUpdater) execAddEndpoint(backend *hatypes.Backend, ep *hatypes.Endpoint) bool {
@@ -596,6 +619,11 @@ func (d *dynUpdater) execSetAddrServer(backname string, ep *hatypes.Endpoint) bo
 	return d.execCommandBackendServer(d.metrics.HAProxySetServerResponseTime, backname, ep, cmd, cmdSetServerAddr)
 }
 
+func (d *dynUpdater) execSetCheckPortServer(backname string, ep *hatypes.Endpoint) bool {
+	cmd := fmt.Sprintf("set server %s/%s check-port %d", backname, ep.Name, ep.Port)
+	return d.execCommandBackendServer(d.metrics.HAProxySetServerResponseTime, backname, ep, cmd, cmdSetServerCheckPort)
+}
+
 func (d *dynUpdater) execSetWeightServer(backname string, ep *hatypes.Endpoint) bool {
 	cmd := fmt.Sprintf("set server %s/%s weight %d", backname, ep.Name, ep.Weight)
 	return d.execCommandBackendServer(d.metrics.HAProxySetServerResponseTime, backname, ep, cmd, cmdSetServerWeight)
@@ -647,19 +675,19 @@ func (d *dynUpdater) execClearCountersServer(backname string, ep *hatypes.Endpoi
 // execRenameEndpoint renames a previously empty slot (which must already be in
 // maintenance mode) from its current name to newName and then enables it for
 // ep. Returns true if both the rename and the enable succeeded.
-func (d *dynUpdater) execRenameEndpoint(backname string, ep *hatypes.Endpoint, newName string) bool {
+func (d *dynUpdater) execRenameEndpoint(backend *hatypes.Backend, ep *hatypes.Endpoint, newName string) bool {
 	oldName := ep.Name
-	if !d.execSetNameServer(backname, ep, newName) {
+	if !d.execSetNameServer(backend.ID, ep, newName) {
 		return false
 	}
 	ep.Name = newName
-	d.logger.InfoV(2, "renamed server on backend '%s' from '%s' to '%s'", backname, oldName, newName)
+	d.logger.InfoV(2, "renamed server on backend '%s' from '%s' to '%s'", backend.ID, oldName, newName)
 
 	// Reset counters while still in maintenance so the new occupant starts
 	// clean; non-fatal, since the rename has already committed.
-	_ = d.execClearCountersServer(backname, ep)
+	_ = d.execClearCountersServer(backend.ID, ep)
 
-	if !d.execEnableEndpoint(backname, nil, ep) || ep.Label != "" {
+	if !d.execEnableEndpoint(backend, nil, ep) || ep.Label != "" {
 		return false
 	}
 	return true
@@ -675,6 +703,7 @@ type cmdClass int
 const (
 	cmdAddServer cmdClass = iota
 	cmdSetServerAddr
+	cmdSetServerCheckPort
 	cmdSetServerWeight
 	cmdSetServerState
 	cmdSetServerName
@@ -686,6 +715,7 @@ const (
 var backendServerCmdAction = map[cmdClass]string{
 	cmdAddServer:           "adding",
 	cmdSetServerAddr:       "updating (address)",
+	cmdSetServerCheckPort:  "updating (check port)",
 	cmdSetServerWeight:     "updating (weight)",
 	cmdSetServerState:      "updating (state)",
 	cmdSetServerName:       "updating (name)",
@@ -732,6 +762,8 @@ func cmdResponseOK(cmdcls cmdClass, response string) bool {
 		return response == "New server registered."
 	case cmdSetServerAddr:
 		return response == "nothing changed" || strings.HasPrefix(response, "IP changed from ") || strings.HasPrefix(response, "port changed from ") || strings.HasPrefix(response, "no need to change ")
+	case cmdSetServerCheckPort:
+		return response == "" || response == "nothing changed" || strings.HasPrefix(response, "check port changed from ") || strings.HasPrefix(response, "no need to change ")
 	case cmdSetServerWeight, cmdSetServerState:
 		return response == ""
 	case cmdSetServerName:
