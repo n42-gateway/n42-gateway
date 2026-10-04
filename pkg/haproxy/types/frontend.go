@@ -347,6 +347,16 @@ func (f *Frontend) HasVarNamespace() bool {
 	return false
 }
 
+// WildcardHasRootRedirect ...
+func (f *Frontend) WildcardHasRootRedirect() bool {
+	for _, host := range f.hosts {
+		if host.RootRedirect != "" && host.IsWildcard() {
+			return true
+		}
+	}
+	return false
+}
+
 // AcquireAuthBackendName ...
 func (proxy *AuthProxy) AcquireAuthBackendName(backend BackendID, ipMode IPMode) (authBackendName string, err error) {
 	freePort := proxy.RangeStart
