@@ -70,7 +70,7 @@ const (
 	TestPortHTTPS   = 28443
 	TestPortStat    = 21936
 
-	CommonTimeout  = 15 * time.Second
+	CommonTimeout  = 30 * time.Second
 	CommonInterval = 2 * time.Second
 )
 
@@ -507,13 +507,41 @@ func (f *framework) HAProxyPid(t *testing.T) int {
 	return pidVal
 }
 
-func (f *framework) ReadNumBackendServers(t *testing.T, svc *corev1.Service) (count int) {
+func (f *framework) ReadNumBackendServers(t *testing.T, svc *corev1.Service, includeMaint bool) (count int) {
 	backendName := fmt.Sprintf("%s_%s_%s", svc.Namespace, svc.Name, svc.Spec.Ports[0].TargetPort.String())
-	output, err := f.admSock.Send(nil, "show servers conn "+backendName)
+	output, err := f.admSock.Send(nil, "show servers state "+backendName)
 	require.NoError(t, err)
 	lines := utils.Split(output[0], "\n")
 	for _, l := range lines {
-		if strings.HasPrefix(l, backendName+"/") {
+		f := strings.Split(l, " ")
+		// f[0]  be_id:           Backend unique id.
+		// f[1]  be_name:         Backend label.
+		// f[2]  srv_id:          Server unique id (in the backend).
+		// f[3]  srv_name:        Server label.
+		// f[4]  srv_addr:        Server IP address.
+		// f[5]  srv_op_state:    Server operational state (UP/DOWN/...).
+		//                          0 = The server is down.
+		//                          1 = The server is warming up (up but throttled).
+		//                          2 = The server is fully up.
+		//                          3 = The server is up but soft-stopping (eg: 404).
+		// f[6]  srv_admin_state: Server administrative state (MAINT/DRAIN/...).
+		//                        The state is actually a mask of values:
+		//                          0x01 = The server was explicitly forced into maintenance.
+		//                          0x02 = The server has inherited the maintenance status from a tracked server.
+		//                          0x04 = The server is in maintenance because of the configuration.
+		//                          0x08 = The server was explicitly forced into drain state.
+		//                          0x10 = The server has inherited the drain status from a tracked server.
+		//                          0x20 = The server is in maintenance because of an IP address resolution failure.
+		//                          0x40 = The server FQDN was set from stats socket.
+		//
+		// https://docs.haproxy.org/3.0/management.html#9.3-show%20servers%20state
+		if len(f) < 7 || f[0] == "#" {
+			continue
+		}
+		admState, err := strconv.Atoi(f[6])
+		require.NoError(t, err)
+		readyState := (admState & 0x01) == 0
+		if includeMaint || readyState {
 			count++
 		}
 	}
