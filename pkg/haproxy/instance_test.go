@@ -1247,6 +1247,47 @@ frontend _front_http_8002
 			expected: `
     http-request redirect location //%[var(req.host)]:9000/api code 301`,
 		},
+		"test73": {
+			doconfig: func(c *testConfig, h *hatypes.Host, b *hatypes.Backend) {
+				h.Alias.AliasName = "sub.d1.local"
+				p1 := h.AddPath(b, "/app(/dir)", hatypes.MatchRegex)
+				p1.Rewrite.Match = "^/app(/dir)"
+				p1.Rewrite.Target = "\\1"
+			},
+			expFronts: `frontend _front_http
+    mode http
+    bind :80
+    <<set-req-base>>
+    <<http-headers>>
+    http-request set-var(req.backend) var(req.base),lower,map_beg(/etc/haproxy/maps/_front_http_host__begin.map)
+    http-request set-var(req.backend) var(req.base),map_reg(/etc/haproxy/maps/_front_http_host__regex.map) if !{ var(req.backend) -m found }
+    use_backend %[var(req.backend)] if { var(req.backend) -m found }
+    default_backend _error404`,
+			expected: `
+    # path01 = d1.local/
+    # path02 = d1.local/app(/dir)
+    http-request set-var(txn.pathID) var(req.base),lower,map_beg(/etc/haproxy/maps/_back_d1_app_8080_front_http_req__begin.map)
+    http-request set-var(txn.pathID) var(req.base),map_reg(/etc/haproxy/maps/_back_d1_app_8080_front_http_req__regex.map) if !{ var(txn.pathID) -m found }
+    http-request replace-path '^/app(/dir)' '\1' if { var(txn.pathID) -m str path02 }`,
+			expCheck: map[string]string{
+				"_front_http_host__begin.map": `
+d1.local#/ d1_app_8080
+sub.d1.local#/ d1_app_8080
+`,
+				"_front_http_host__regex.map": `
+^sub\.d1\.local#/app(/dir) d1_app_8080
+^d1\.local#/app(/dir) d1_app_8080
+`,
+				"_back_d1_app_8080_front_http_req__begin.map": `
+d1.local#/ path01
+sub.d1.local#/ path01
+`,
+				"_back_d1_app_8080_front_http_req__regex.map": `
+^sub\.d1\.local#/app(/dir) path02
+^d1\.local#/app(/dir) path02
+`,
+			},
+		},
 	}
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
