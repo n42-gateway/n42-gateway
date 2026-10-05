@@ -452,6 +452,7 @@ func (c *config) WriteBackendMaps() error {
 				} else {
 					pathsMap.ReqMap.AddHostnamePathMapping(path.Hostname(), path, path.ID)
 				}
+				pathsMap.ReqMap.AddAliasPathMapping(path.Host.Alias, path, path.ID)
 			}
 		}
 	}
