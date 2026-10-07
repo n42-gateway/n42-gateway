@@ -1327,9 +1327,9 @@ Request forbidden by administrative rules.
 		}
 
 		// servers and replicas handling helpers
-		eventuallyServerCount := func(t *testing.T, svc *corev1.Service, expectedServerCount int) {
+		eventuallyServerCount := func(t *testing.T, svc *corev1.Service, expectedServerCount int, includeMaint bool) {
 			require.EventuallyWithT(t, func(collect *assert.CollectT) {
-				assert.Equal(collect, expectedServerCount, f.ReadNumBackendServers(t, svc))
+				assert.Equal(collect, expectedServerCount, f.ReadNumBackendServers(t, svc, includeMaint))
 			}, framework.CommonTimeout, framework.CommonInterval)
 		}
 		eventuallyBalanceCount := func(t *testing.T, hostname string, expectedServerCount int) {
@@ -1349,12 +1349,12 @@ Request forbidden by administrative rules.
 				f.RemoveReplicas(ctx, t, ep, -addRemove)
 			}
 		}
-		changeReplicasAndWait := func(t *testing.T, preparedIngress ingData, addRemove, expectedServers, expectedServing int) {
+		changeReplicasAndWait := func(t *testing.T, preparedIngress ingData, addRemove, expectedServers, expectedServing int, includeMaintenance bool) {
 			changeReplicas(preparedIngress.ep, addRemove)
-			eventuallyServerCount(t, preparedIngress.svc, expectedServers)
+			eventuallyServerCount(t, preparedIngress.svc, expectedServers, includeMaintenance)
 			eventuallyBalanceCount(t, preparedIngress.hostname, expectedServing)
 		}
-		changeReplicasParallel := func(t *testing.T, preparedIngress ingData, addRemove, expectedServers, expectedServing int) {
+		changeReplicasParallel := func(t *testing.T, preparedIngress ingData, addRemove, expectedServers, expectedServing int, includeMaintenance bool) {
 			ctxReq, cancelReq := context.WithCancel(ctx)
 			defer cancelReq()
 
@@ -1373,7 +1373,7 @@ Request forbidden by administrative rules.
 
 			// giving some time for some unexpected async update to (not-)happen
 			time.Sleep(2 * requestDuration)
-			eventuallyServerCount(t, preparedIngress.svc, expectedServers)
+			eventuallyServerCount(t, preparedIngress.svc, expectedServers, includeMaintenance)
 			eventuallyBalanceCount(t, preparedIngress.hostname, expectedServing)
 
 			cancelReq()
@@ -1381,6 +1381,10 @@ Request forbidden by administrative rules.
 		}
 
 		t.Run("slots strategy", func(t *testing.T) {
+			// Consider the ready and maint servers when counting the backend server entries.
+			// Unused servers are preserved in the slot strategy in maintenance state.
+			includeMaintenance := true
+
 			preparedIngress := prepareIngress(
 				options.AddConfigKeyAnnotation(ingtypes.BackDynamicScaling, "slots"),
 				options.AddConfigKeyAnnotation(ingtypes.BackSlotsMinFree, "3"),
@@ -1388,59 +1392,64 @@ Request forbidden by administrative rules.
 			)
 
 			// check initial state
-			changeReplicasAndWait(t, preparedIngress, 0, 4, 1)
+			changeReplicasAndWait(t, preparedIngress, 0, 4, 1, includeMaintenance)
 			expectedPid := f.HAProxyPid(t)
 
 			// has 1 replica
 			// add 3 replicas and check
-			changeReplicasAndWait(t, preparedIngress, 3, 4, 4)
+			changeReplicasAndWait(t, preparedIngress, 3, 4, 4, includeMaintenance)
 			require.Equal(t, expectedPid, f.HAProxyPid(t))
 
 			// has 4 replicas
 			// add 1 replica and check, should reload
-			changeReplicasAndWait(t, preparedIngress, 1, 8, 5)
+			changeReplicasAndWait(t, preparedIngress, 1, 8, 5, includeMaintenance)
 			newPid1 := f.HAProxyPid(t)
 			require.NotEqual(t, expectedPid, newPid1)
 			expectedPid = newPid1
 
 			// has 5 replicas
 			// remove 2 replicas and check
-			changeReplicasAndWait(t, preparedIngress, -2, 8, 3)
+			changeReplicasAndWait(t, preparedIngress, -2, 8, 3, includeMaintenance)
 			require.Equal(t, expectedPid, f.HAProxyPid(t))
 
 			// has 3 replicas
 			// remove 2 replicas and check running requests succeeding
-			changeReplicasParallel(t, preparedIngress, -2, 8, 1)
+			changeReplicasParallel(t, preparedIngress, -2, 8, 1, includeMaintenance)
 			require.Equal(t, expectedPid, f.HAProxyPid(t))
 		})
 
 		t.Run("add strategy", func(t *testing.T) {
+			// Consider only the ready servers when counting the backend server entries.
+			// Unused servers are removed by the runtime API, but should be left behind in
+			// maintenance mode in case it cannot be removed - e.g. active connections.
+			includeMaintenance := false
+
 			preparedIngress := prepareIngress(
 				options.AddConfigKeyAnnotation(ingtypes.BackDynamicScaling, "add"),
 			)
 
 			// check initial state
-			changeReplicasAndWait(t, preparedIngress, 0, 1, 1)
+			changeReplicasAndWait(t, preparedIngress, 0, 1, 1, includeMaintenance)
 			expectedPid := f.HAProxyPid(t)
 
 			// has 1 replica
 			// add 1 replica and check
-			changeReplicasAndWait(t, preparedIngress, 1, 2, 2)
+			changeReplicasAndWait(t, preparedIngress, 1, 2, 2, includeMaintenance)
 			require.Equal(t, expectedPid, f.HAProxyPid(t))
 
 			// has 2 replicas
 			// add 3 replicas and check
-			changeReplicasAndWait(t, preparedIngress, 3, 5, 5)
+			changeReplicasAndWait(t, preparedIngress, 3, 5, 5, includeMaintenance)
 			require.Equal(t, expectedPid, f.HAProxyPid(t))
 
 			// has 5 replicas
 			// remove 2 replicas and check
-			changeReplicasAndWait(t, preparedIngress, -2, 3, 3)
+			changeReplicasAndWait(t, preparedIngress, -2, 3, 3, includeMaintenance)
 			require.Equal(t, expectedPid, f.HAProxyPid(t))
 
 			// has 3 replicas
 			// remove 2 replicas and check running requests succeeding
-			changeReplicasParallel(t, preparedIngress, -2, 3, 1)
+			changeReplicasParallel(t, preparedIngress, -2, 1, 1, includeMaintenance)
 			require.Equal(t, expectedPid, f.HAProxyPid(t))
 		})
 	})
