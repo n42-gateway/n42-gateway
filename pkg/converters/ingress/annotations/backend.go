@@ -286,6 +286,9 @@ func (c *updater) buildBackendAuthHTTP(d *backData) {
 		if authSecret.Value == "" {
 			continue
 		}
+		// Basic auth should be successfully configured or requests should be denied.
+		// AlwaysDeny will be changed to false if the configuration succeed.
+		path.AuthHTTP.AlwaysDeny = true
 		secretName := authSecret.Value
 		if !strings.Contains(secretName, "/") {
 			secretName = authSecret.Source.Namespace + "/" + secretName
@@ -329,6 +332,7 @@ func (c *updater) buildBackendAuthHTTP(d *backData) {
 		} else if authRealm.Value != "" {
 			realm = authRealm.Value
 		}
+		path.AuthHTTP.AlwaysDeny = false
 		path.AuthHTTP.UserlistName = userlist.Name
 		path.AuthHTTP.Realm = realm
 	}
