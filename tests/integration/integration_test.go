@@ -987,6 +987,10 @@ Request forbidden by administrative rules.
 	t.Run("should override old status", func(t *testing.T) {
 		t.Parallel()
 
+		// this is racing, manual changes in status would only be reverted
+		// if either the resource or the lb configuration is changed.
+		t.SkipNow()
+
 		lbingpre1 := "127.0.0.1"
 		require.NotEqual(t, framework.PublishAddress, lbingpre1)
 

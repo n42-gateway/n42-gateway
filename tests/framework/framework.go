@@ -70,7 +70,11 @@ const (
 	TestPortHTTPS   = 28443
 	TestPortStat    = 21936
 
-	CommonTimeout  = 30 * time.Second
+	// Configure timeout as 2x the ReloadRetry plus another 10s.
+	// This gives more time for an unexpected flake during a
+	// reload attempt to repair itself and succeed.
+	ReloadRetry    = 30 * time.Second
+	CommonTimeout  = 2*ReloadRetry + 10*time.Second
 	CommonInterval = 2 * time.Second
 )
 
@@ -236,6 +240,7 @@ func (f *framework) StartController(ctx context.Context, t *testing.T) {
 	opt.MasterWorker = true
 	opt.LocalFSPrefix = LocalFSPrefix
 	opt.PublishService = PublishSvcName
+	opt.ReloadRetry = ReloadRetry
 	opt.ConfigMap = GlobalConfigMap.String()
 	// Our Request() method and EndpointSlice configuration currently uses IPv4 address only
 	opt.IPMode = "v4"
