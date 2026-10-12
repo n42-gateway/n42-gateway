@@ -348,10 +348,10 @@ func (b *Backend) createPathsMaps() []*BackendPathsMaps {
 		backMap := pathsMaps[i]
 		backMap.Paths = append(backMap.Paths, path)
 	}
-	// Deduplicate maps with the exact same paths, a common pattern on models configured via Ingress API.
-	// This deduplication reduces the size of the backend configuration.
+	// Deduplicate maps with the exact same host and path configurations, a common pattern on models
+	// configured via Ingress API. This deduplication reduces the size of the backend configuration.
 	pathsMaps = slices.CompactFunc(pathsMaps, func(m1, m2 *BackendPathsMaps) bool {
-		if slices.EqualFunc(m1.Paths, m2.Paths, func(p1, p2 *Path) bool { return utils.StructEquals(p1, p2, "ID", "Link", "Host", "Backend") }) {
+		if m1.sameHostAndPaths(m2) {
 			m2.Frontends = append(m2.Frontends, m1.Frontends...)
 			return true
 		}
@@ -457,6 +457,17 @@ func (b *BackendPathConfig) PathIDs(index int) []string {
 		lower = lower + maxTokensPerLine
 	}
 	return pathIDs
+}
+
+// sameHostAndPaths returns true if the other BackendPathsMaps instance
+// has the same Host and Path configurations from the current one for
+// backend scoped ACLs. Having the same Host and Path configurations
+// qualifies the maps to share backend ACLs.
+func (b *BackendPathsMaps) sameHostAndPaths(other *BackendPathsMaps) bool {
+	return slices.EqualFunc(b.Paths, other.Paths, func(p1, p2 *Path) bool {
+		return utils.StructEquals(p1, p2, "ID", "Link", "Host", "Backend") &&
+			p1.Host.Alias == p2.Host.Alias
+	})
 }
 
 // IsEmpty ...

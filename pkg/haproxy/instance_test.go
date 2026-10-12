@@ -1264,8 +1264,8 @@ frontend _front_http_8002
     use_backend %[var(req.backend)] if { var(req.backend) -m found }
     default_backend _error404`,
 			expected: `
-    # path01 = d1.local/
-    # path02 = d1.local/app(/dir)
+    # path01 = d1.local/ -- alias:sub.d1.local/
+    # path02 = d1.local/app(/dir) -- alias:sub.d1.local/app(/dir)
     http-request set-var(txn.pathID) var(req.base),lower,map_beg(/etc/haproxy/maps/_back_d1_app_8080_front_http_req__begin.map)
     http-request set-var(txn.pathID) var(req.base),map_reg(/etc/haproxy/maps/_back_d1_app_8080_front_http_req__regex.map) if !{ var(txn.pathID) -m found }
     http-request replace-path '^/app(/dir)' '\1' if { var(txn.pathID) -m str path02 }`,
@@ -2739,6 +2739,27 @@ func TestInstanceDefaultHost(t *testing.T) {
 	p2.Rewrite.Target = "/"
 	hdefhttps.AddPath(b, "/app13", hatypes.MatchPrefix).MaxBodySize = 65536
 
+	//
+
+	b = c.config.Backends().AcquireBackend("d3", "app", "8080")
+	b.Endpoints = []*hatypes.Endpoint{endpointS1}
+
+	hhttp = fhttp.AcquireHost("d3.local")
+	hhttp.Alias.AliasName = "alias.d3.local"
+	_ = hhttp.AddPath(b, "/app11", hatypes.MatchBegin)
+	p2 = hdefhttp.AddPath(b, "/app12", hatypes.MatchPrefix)
+	p2.Rewrite.Match = "^/app12"
+	p2.Rewrite.Target = "/"
+
+	hhttps = fhttps.AcquireHost("d3.local")
+	hhttps.Alias.AliasName = "alias.d3.local"
+	hhttps.TLS.TLSFilename = "/var/haproxy/ssl/certs/default.pem"
+	hhttps.TLS.TLSHash = "0"
+	_ = hhttps.AddPath(b, "/app11", hatypes.MatchBegin)
+	p2 = hdefhttps.AddPath(b, "/app12", hatypes.MatchPrefix)
+	p2.Rewrite.Match = "^/app12"
+	p2.Rewrite.Target = "/"
+
 	c.Update()
 	c.checkConfig(`
 <<global>>
@@ -2767,6 +2788,14 @@ backend d2_app_8080
     http-request set-var(txn.pathID) str(<default>\#),concat(,req.path),map_dir(/etc/haproxy/maps/_back_d2_app_8080_front_http_def__prefix.map) if !{ var(txn.pathID) -m found }
     http-request redirect scheme https if !https-request { var(txn.pathID) -m str path01 }
     http-request use-service lua.send-413 if { var(txn.pathID) -m str path03 } { req.body_size,sub(65536) gt 0 }
+    http-request replace-path '^/app12' '/' if { var(txn.pathID) -m str path02 }
+    server s1 172.17.0.11:8080 weight 100
+backend d3_app_8080
+    mode http
+    # path02 = <default>/app12
+    # path01 = d3.local/app11 -- alias:alias.d3.local/app11
+    http-request set-var(txn.pathID) var(req.base),lower,map_beg(/etc/haproxy/maps/_back_d3_app_8080_front_http_req__begin.map)
+    http-request set-var(txn.pathID) str(<default>\#),concat(,req.path),map_dir(/etc/haproxy/maps/_back_d3_app_8080_front_http_def__prefix.map) if !{ var(txn.pathID) -m found }
     http-request replace-path '^/app12' '/' if { var(txn.pathID) -m str path02 }
     server s1 172.17.0.11:8080 weight 100
 backend default_default-backend_8080
@@ -2820,16 +2849,28 @@ frontend _front_https
 <default>#/app13 path03`)
 	c.checkMap("_back_d2_app_8080_front_http_req__begin.map", `
 d2.local#/app11 path01`)
+	c.checkMap("_back_d3_app_8080_front_http_req__begin.map", `
+alias.d3.local#/app11 path01
+d3.local#/app11 path01
+`)
+	c.checkMap("_back_d3_app_8080_front_http_def__prefix.map", `
+<default>#/app12 path02
+`)
 
 	c.checkMap("_front_http_host__begin.map", `
+alias.d3.local#/app11 d3_app_8080
 d2.local#/app11 d2_app_8080
+d3.local#/app11 d3_app_8080
 `)
 	c.checkMap("_front_http_namespace__begin.map", `
 d2.local#/app11 d2
+d3.local#/app11 -
 `)
 	c.checkMap("_front_http_defaulthost__prefix_02.map", `
 <default>#/app2 d1_app_8080
-<default>#/app13 d2_app_8080`)
+<default>#/app13 d2_app_8080
+<default>#/app12 d3_app_8080
+`)
 	c.checkMap("_front_http_defaulthost__exact.map", `
 <default>#/app1 d1_app_8080
 <default>#/app12 d2_app_8080`)
@@ -2838,13 +2879,18 @@ d2.local#/app11 d2
 
 	c.checkMap("_front_https_namespace__begin.map", `
 d2.local#/app11 d2
+d3.local#/app11 -
 `)
 	c.checkMap("_front_https_host__begin.map", `
+alias.d3.local#/app11 d3_app_8080
 d2.local#/app11 d2_app_8080
+d3.local#/app11 d3_app_8080
 `)
 	c.checkMap("_front_https_defaulthost__prefix_02.map", `
 <default>#/app2 d1_app_8080
-<default>#/app13 d2_app_8080`)
+<default>#/app13 d2_app_8080
+<default>#/app12 d3_app_8080
+`)
 	c.checkMap("_front_https_defaulthost__exact.map", `
 <default>#/app1 d1_app_8080
 <default>#/app12 d2_app_8080`)
@@ -5220,6 +5266,7 @@ func TestInstanceAlias(t *testing.T) {
 	h = f.AcquireHost("d1.local")
 	h.AddPath(b, "/", hatypes.MatchBegin)
 	h.Alias.AliasName = "*.d1.local"
+	h.AddPath(b, "/app", hatypes.MatchBegin).MaxBodySize = 4096 // adds ACL in the backend
 
 	b = c.config.Backends().AcquireBackend("d2", "app", "8080")
 	b.Endpoints = []*hatypes.Endpoint{endpointS21}
@@ -5227,12 +5274,14 @@ func TestInstanceAlias(t *testing.T) {
 	h.AddPath(b, "/", hatypes.MatchBegin)
 	h.Alias.AliasName = "sub.d2.local"
 	h.Alias.AliasRegex = "^[a-z]+\\.d2\\.local$"
+	h.AddPath(b, "/app", hatypes.MatchBegin).MaxBodySize = 4096 // adds ACL in the backend
 
 	b = c.config.Backends().AcquireBackend("d3", "app", "8080")
 	b.Endpoints = []*hatypes.Endpoint{endpointS31}
 	h = f.AcquireHost("d3.local")
 	h.AddPath(b, "/", hatypes.MatchBegin)
 	h.Alias.AliasRegex = "d3\\.local$"
+	h.AddPath(b, "/app", hatypes.MatchBegin).MaxBodySize = 4096 // adds ACL in the backend
 
 	c.Update()
 	c.checkConfig(`
@@ -5240,12 +5289,27 @@ func TestInstanceAlias(t *testing.T) {
 <<defaults>>
 backend d1_app_8080
     mode http
+    # path01 = d1.local/ -- alias:*.d1.local/
+    # path02 = d1.local/app -- alias:*.d1.local/app
+    http-request set-var(txn.pathID) var(req.base),lower,map_beg(/etc/haproxy/maps/_back_d1_app_8080_front_http_req__begin.map)
+    http-request set-var(txn.pathID) var(req.base),map_reg(/etc/haproxy/maps/_back_d1_app_8080_front_http_req__regex.map) if !{ var(txn.pathID) -m found }
+    http-request use-service lua.send-413 if { var(txn.pathID) -m str path02 } { req.body_size,sub(4096) gt 0 }
     server s1 172.17.0.11:8080 weight 100
 backend d2_app_8080
     mode http
+    # path01 = d2.local/ -- alias:sub.d2.local/ -- alias-regex:^[a-z]+\.d2\.local$/
+    # path02 = d2.local/app -- alias:sub.d2.local/app -- alias-regex:^[a-z]+\.d2\.local$/app
+    http-request set-var(txn.pathID) var(req.base),lower,map_beg(/etc/haproxy/maps/_back_d2_app_8080_front_http_req__begin.map)
+    http-request set-var(txn.pathID) var(req.base),map_reg(/etc/haproxy/maps/_back_d2_app_8080_front_http_req__regex.map) if !{ var(txn.pathID) -m found }
+    http-request use-service lua.send-413 if { var(txn.pathID) -m str path02 } { req.body_size,sub(4096) gt 0 }
     server s21 172.17.0.121:8080 weight 100
 backend d3_app_8080
     mode http
+    # path01 = d3.local/ -- alias-regex:d3\.local$/
+    # path02 = d3.local/app -- alias-regex:d3\.local$/app
+    http-request set-var(txn.pathID) var(req.base),lower,map_beg(/etc/haproxy/maps/_back_d3_app_8080_front_http_req__begin.map)
+    http-request set-var(txn.pathID) var(req.base),map_reg(/etc/haproxy/maps/_back_d3_app_8080_front_http_req__regex.map) if !{ var(txn.pathID) -m found }
+    http-request use-service lua.send-413 if { var(txn.pathID) -m str path02 } { req.body_size,sub(4096) gt 0 }
     server s31 172.17.0.131:8080 weight 100
 <<backends-default>>
 frontend _front_http
@@ -5261,14 +5325,21 @@ frontend _front_http
 `)
 
 	c.checkMap("_front_http_host__begin.map", `
+d1.local#/app d1_app_8080
 d1.local#/ d1_app_8080
+d2.local#/app d2_app_8080
 d2.local#/ d2_app_8080
+d3.local#/app d3_app_8080
 d3.local#/ d3_app_8080
+sub.d2.local#/app d2_app_8080
 sub.d2.local#/ d2_app_8080
 `)
 	c.checkMap("_front_http_host__regex.map", `
+^[a-z]+\.d2\.local#/app d2_app_8080
+^[^.]+\.d1\.local#/app d1_app_8080
 ^[a-z]+\.d2\.local#/ d2_app_8080
 ^[^.]+\.d1\.local#/ d1_app_8080
+d3\.local#/app d3_app_8080
 d3\.local#/ d3_app_8080
 `)
 	c.logger.CompareLogging(defaultLogging)

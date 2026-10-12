@@ -491,6 +491,10 @@ backend {{ $backend.ID }}
 {{- range $pathsMap := $backend.PathsMaps }}
 {{- range $path := $pathsMap.Paths }}
     # {{ $path.ID }} = {{ if $needFrontendACL }}fe:{{ join "/" $pathsMap.Frontends }} -- host/path:{{ end }}{{ $path.Hostname }}{{ $path.Path }}
+    {{- with $path.Host }}
+        {{- with .Alias.AliasName }} -- alias:{{ . }}{{ $path.Path }}{{ end }}
+        {{- with .Alias.AliasRegex }} -- alias-regex:{{ . }}{{ $path.Path }}{{ end }}
+    {{- end }}
 {{- end }}
 {{- end }}
 {{- if $needFrontendACL }}

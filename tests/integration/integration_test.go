@@ -774,6 +774,56 @@ func TestIntegrationIngress(t *testing.T) {
 		assert.Equal(t, []string{"msg 3", "msg 6"}, ws3.ReadClientMessages(t))
 	})
 
+	t.Run("should add alias in backend acl", func(t *testing.T) {
+		t.Parallel()
+
+		svc := f.CreateService(ctx, t, httpServerPort)
+		const hostname = "site.d1.local"
+		const alias = "alias.d1.local"
+
+		// CORS and Alias enabled
+		_, _ = f.CreateIngress(ctx, t, svc,
+			options.CustomHostName(hostname),
+			options.AddConfigKeyAnnotation(ingtypes.HostServerAlias, alias),
+			options.AddConfigKeyAnnotation(ingtypes.BackCorsEnable, "true"),
+			options.AddConfigKeyAnnotation(ingtypes.BackCorsAllowMethods, "GET"),
+			options.AddConfigKeyAnnotation(ingtypes.BackSSLRedirect, "false"),
+			options.DefaultTLS(),
+		)
+
+		// CORS disabled in the same hostname and backend, only path differs
+		_, _ = f.CreateIngress(ctx, t, svc,
+			options.CustomHostName(hostname),
+			options.AddConfigKeyAnnotation(ingtypes.BackSSLRedirect, "false"),
+			options.DefaultTLS(),
+			options.CustomObject(func(o client.Object) {
+				ing := o.(*networkingv1.Ingress)
+				ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Path = "/app"
+			}),
+		)
+
+		resHost := f.Request(ctx, t, http.MethodGet, hostname, "/",
+			options.SetHeader("origin", "localhost"),
+			options.ExpectResponseCode(http.StatusOK),
+		)
+		assert.True(t, resHost.EchoResponse.Parsed)
+		assert.Equal(t, "GET", resHost.HTTPResponse.Header.Get("access-control-allow-methods"))
+
+		resAlias := f.Request(ctx, t, http.MethodGet, alias, "/",
+			options.SetHeader("origin", "localhost"),
+			options.ExpectResponseCode(http.StatusOK),
+		)
+		assert.True(t, resAlias.EchoResponse.Parsed)
+		assert.Equal(t, "GET", resAlias.HTTPResponse.Header.Get("access-control-allow-methods"))
+
+		resNoACL := f.Request(ctx, t, http.MethodGet, hostname, "/app",
+			options.SetHeader("origin", "localhost"),
+			options.ExpectResponseCode(http.StatusOK),
+		)
+		assert.True(t, resNoACL.EchoResponse.Parsed)
+		assert.Equal(t, "", resNoACL.HTTPResponse.Header.Get("access-control-allow-methods"))
+	})
+
 	t.Run("should override lua and host based http response", func(t *testing.T) {
 		t.Parallel()
 
