@@ -11,7 +11,9 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write # cosign keyless signing via GitHub OIDC
+      id-token: write # cosign keyless signing and attestations via GitHub OIDC
+      attestations: write # store the attestations on GitHub
+      artifact-metadata: write # link the image to its registries on GitHub
     steps:
     - name: Configure envvars
       run: |
@@ -58,6 +60,11 @@ jobs:
         file: builder/Dockerfile
         platforms: linux/amd64,linux/arm64/v8,linux/arm/v7,linux/arm/v6,linux/s390x
         push: true
+        # BuildKit attestations, unsigned but listed in the signed image
+        # index next to each platform's image: SLSA 1.x provenance (mode=max
+        # adds the build args and steps) and an SPDX SBOM of the final image.
+        provenance: mode=max,version=v1
+        sbom: true
         build-args: |
           GIT_TAG=${{ env.GIT_TAG }}
         tags: ${{ env.TAGS }}
@@ -68,3 +75,46 @@ jobs:
         for image in $IMAGES; do
           cosign sign --yes --oidc-provider=github-actions "${image}@${DIGEST}"
         done
+    # Signed attestations of the image index, stored on GitHub and pushed
+    # next to it as OCI referrers. One step per repository: push-to-registry
+    # takes a single subject-name. The provenance steps create the storage
+    # records, the SBOM ones would duplicate them.
+    - name: Attest build provenance (ghcr.io)
+      uses: actions/attest@v4
+      with:
+        subject-name: ghcr.io/n42-gateway/n42-gateway
+        subject-digest: ${{ steps.build.outputs.digest }}
+        subject-version: ${{ env.GIT_TAG }}
+        push-to-registry: true
+    - name: Attest build provenance (quay.io)
+      uses: actions/attest@v4
+      with:
+        subject-name: quay.io/n42-gateway/n42-gateway
+        subject-digest: ${{ steps.build.outputs.digest }}
+        subject-version: ${{ env.GIT_TAG }}
+        push-to-registry: true
+    # The signed SBOM is BuildKit's linux/amd64 one: an attestation subject
+    # is the index, which has one SBOM per platform. Every platform builds
+    # the same Dockerfile, so they list the same packages and Go modules.
+    - name: Extract SBOM
+      env:
+        DIGEST: ${{ steps.build.outputs.digest }}
+      run: |
+        docker buildx imagetools inspect "ghcr.io/n42-gateway/n42-gateway@${DIGEST}" \
+          --format '{{ json (index .SBOM "linux/amd64").SPDX }}' > "${RUNNER_TEMP}/sbom.spdx.json"
+    - name: Attest SBOM (ghcr.io)
+      uses: actions/attest@v4
+      with:
+        subject-name: ghcr.io/n42-gateway/n42-gateway
+        subject-digest: ${{ steps.build.outputs.digest }}
+        sbom-path: ${{ runner.temp }}/sbom.spdx.json
+        push-to-registry: true
+        create-storage-record: false
+    - name: Attest SBOM (quay.io)
+      uses: actions/attest@v4
+      with:
+        subject-name: quay.io/n42-gateway/n42-gateway
+        subject-digest: ${{ steps.build.outputs.digest }}
+        sbom-path: ${{ runner.temp }}/sbom.spdx.json
+        push-to-registry: true
+        create-storage-record: false
