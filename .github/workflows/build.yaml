@@ -7,6 +7,10 @@ on:
   pull_request:
     branches:
     - master
+    - 'release-*'
+env:
+  IS_PRE_MERGE: ${{ github.event_name == 'pull_request' }}
+  IS_POST_MERGE: ${{ github.event_name == 'push' }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,7 +29,7 @@ jobs:
     - name: Run unit tests
       run: make test
   integration:
-    if: github.ref_name != 'master'
+    if: ${{ env.IS_PRE_MERGE }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -54,7 +58,7 @@ jobs:
     - name: Run integration tests on Kubernetes ${{ matrix.envtest-version }}
       run: HAPROXY_INGRESS_ENVTEST=${{ matrix.envtest-version }} make test-integration
   image:
-    if: github.ref_name == 'master' || startsWith(github.ref_name, 'release-') ## delayed check, PRs do not have access to secrets
+    if: ${{ env.IS_POST_MERGE }} ## delayed check, PRs do not have access to secrets
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
