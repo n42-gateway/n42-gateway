@@ -24,16 +24,12 @@ name: Check Spelling
 on:
   push:
     branches:
-      - '**'
-    tags-ignore:
-      - '**'
+      - master
+      - 'release-*'
   pull_request_target:
     branches:
-      - '**'
-    types:
-      - 'opened'
-      - 'reopened'
-      - 'synchronize'
+      - master
+      - 'release-*'
 
 permissions: {}
 
@@ -45,11 +41,41 @@ jobs:
       pull-requests: read
       actions: read
       security-events: write
-    outputs:
-      followup: ${{ steps.spelling.outputs.followup }}
     runs-on: ubuntu-latest
     steps:
+      - name: check-eligible
+        id: gate
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          branch="$REF_NAME"
+          if [[ "$EVENT_NAME" == "pull_request_target" ]]; then
+            branch="$BASE_REF"
+          fi
+          # Always allow master
+          if [ "$branch" = "master" ]; then
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+            echo "Running spelling on master"
+            exit 0
+          fi
+          # Only allow release-* from 0.17 onward
+          if [[ "$branch" =~ ^release-([0-9]+)\.([0-9]+) ]]; then
+            major="${BASH_REMATCH[1]}"
+            minor="${BASH_REMATCH[2]}"
+            if (( major > 0 )) || (( major == 0 && minor >= 17 )); then
+              echo "eligible=true" >> "$GITHUB_OUTPUT"
+              echo "Running spelling on $branch"
+              exit 0
+            fi
+          fi
+          echo "eligible=false" >> "$GITHUB_OUTPUT"
+          echo "Skipping spelling on $branch (older than release-0.17)"
+          exit 0
       - name: check-spelling
+        if: ${{ steps.gate.outputs.eligible == 'true' }}
         id: spelling
         uses: check-spelling/check-spelling@v0.0.25
         with:
