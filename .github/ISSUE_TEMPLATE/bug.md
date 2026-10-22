@@ -12,27 +12,25 @@ N42 Gateway. Use Slack or GitHub Discussions instead if
 you need support or if you are in doubt if you found a bug.
 -->
 
-**Description of the problem**
+## Description of the problem
 
-<!-- A clear and concise description of what's happening but shouldn't happen -->
+<!-- A clear and concise description of what's happening but shouldn't -->
 
-
-**Expected behavior**
+## Expected behavior
 
 <!-- A description of what you expected to happen -->
 
-
-**Steps to reproduce the problem**
+## Steps to reproduce the problem
 
 1. 
 2. 
 3. 
 
-**Environment information**
+## Environment information
 
 <!-- Edit v0.xx below with the version of your N42 Gateway -->
 
-N42 Gateway version: `v0.xx`
+N42 Gateway / HAProxy Ingress version: `v0.xx`
 
 <!-- Put the actual configuration inside code blocks ``` -->
 

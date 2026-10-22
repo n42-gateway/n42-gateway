@@ -12,11 +12,10 @@ request. Use Slack or mailing list instead if you need support or if you
 are in doubt if N42 Gateway already do what you are proposing.
 -->
 
-**What are you trying to do**
+## What are you trying to do
 
 <!-- A clear and concise description of what you want to happen -->
 
-
-**What N42 Gateway should do or how it should behave differently**
+## What N42 Gateway should do or how it should behave differently
 
 <!-- Describe how N42 Gateway could be changed or evolved -->
