@@ -82,6 +82,7 @@ type Options struct {
 	PublishAddress           string
 	IPMode                   string
 	TCPConfigMapName         string
+	ReloadOnConfigMapChange  string
 	AnnPrefix                string
 	RateLimitUpdate          float64
 	ReloadInterval           time.Duration
@@ -322,6 +323,12 @@ func (o *Options) AddFlags(fs *flag.FlagSet) {
 		"the name of the service with the format namespace/serviceName and the port of "+
 		"the service could be a number of the name of the port. The ports 80 and 443 are "+
 		"not allowed as external ports. This ports are reserved for the backend.",
+	)
+
+	fs.StringVar(&o.ReloadOnConfigMapChange, "reload-on-configmap-change", o.ReloadOnConfigMapChange, ""+
+		"Comma-separated list of ConfigMap names in namespace/name format that trigger a full "+
+		"HAProxy reload when their content changes. The ConfigMaps must be mounted as volumes "+
+		"in the pod so that Kubernetes propagates file changes automatically.",
 	)
 
 	fs.StringVar(&o.AnnPrefix, "annotations-prefix", o.AnnPrefix, ""+

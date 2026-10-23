@@ -74,9 +74,10 @@ type ChangedObjects struct {
 	IngressesUpd,
 	IngressesAdd []*networking.Ingress
 	//
-	NeedFullSync bool
-	Objects      []string
-	Links        TrackingLinks
+	NeedFullSync            bool
+	ReloadOnConfigMapChange bool
+	Objects                 []string
+	Links                   TrackingLinks
 }
 
 // ResourceType ...
