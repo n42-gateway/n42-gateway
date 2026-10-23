@@ -230,7 +230,8 @@ func (w *watchers) handlersCore() []*hdlr {
 							// peers
 							objOld := e.ObjectOld.(*api.Pod)
 							objNew := e.ObjectNew.(*api.Pod)
-							return objOld.Status.PodIP != objNew.Status.PodIP
+							return objOld.Status.PodIP != objNew.Status.PodIP ||
+								(objOld.DeletionTimestamp == nil) != (objNew.DeletionTimestamp == nil)
 						}
 						return e.ObjectOld.GetDeletionTimestamp() != e.ObjectNew.GetDeletionTimestamp()
 					},
