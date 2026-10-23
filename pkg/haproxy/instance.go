@@ -341,6 +341,10 @@ func (i *instance) HAProxyUpdate(timer *utils.Timer) error {
 	}
 	updater := i.newDynUpdater()
 	updated := updater.update()
+	if updated && i.config.ForceReload() {
+		i.logger.InfoV(2, "need to reload due to mounted volume file change")
+		updated = false
+	}
 	if i.options.SortEndpointsBy != "random" {
 		i.config.Backends().SortChangedEndpoints(i.options.SortEndpointsBy)
 	} else if !updated {

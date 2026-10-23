@@ -70,3 +70,18 @@ func TestClear(t *testing.T) {
 		t.Error("expected len(backends) == 0")
 	}
 }
+
+func TestForceReload(t *testing.T) {
+	c := createConfig(options{})
+	if c.ForceReload() {
+		t.Error("expected ForceReload() == false initially")
+	}
+	c.SetForceReload()
+	if !c.ForceReload() {
+		t.Error("expected ForceReload() == true after SetForceReload()")
+	}
+	c.Commit()
+	if c.ForceReload() {
+		t.Error("expected ForceReload() == false after Commit()")
+	}
+}

@@ -268,6 +268,9 @@ func (s *Services) ReconcileIngress(ctx context.Context, changed *convtypes.Chan
 	s.updateCount++
 	s.log.Info("starting reconciliation", "id", s.updateCount)
 	timer := utils.NewTimer(s.metrics.ControllerProcTime)
+	if changed.ReloadOnConfigMapChange {
+		s.instance.Config().SetForceReload()
+	}
 	var errmsg string
 	converter := converters.NewConverter(timer, s.instance.Config(), changed, s.converterOpt)
 	if err = converter.Sync(); err != nil {

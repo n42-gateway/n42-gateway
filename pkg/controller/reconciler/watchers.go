@@ -153,6 +153,10 @@ func (w *watchers) handlersCore() []*hdlr {
 			w.ch.GlobalConfigMapDataNew = cm.Data
 		case w.cfg.TCPConfigMapName:
 			w.ch.TCPConfigMapDataNew = cm.Data
+		default:
+			if slices.Contains(w.cfg.ReloadConfigMaps, key) {
+				w.ch.ReloadOnConfigMapChange = true
+			}
 		}
 	}
 	return []*hdlr{
@@ -170,7 +174,9 @@ func (w *watchers) handlersCore() []*hdlr {
 				predicate.NewPredicateFuncs(func(o client.Object) bool {
 					cm := o.(*api.ConfigMap)
 					key := cm.Namespace + "/" + cm.Name
-					return key == w.cfg.ConfigMapName || key == w.cfg.TCPConfigMapName
+					return key == w.cfg.ConfigMapName ||
+						key == w.cfg.TCPConfigMapName ||
+						slices.Contains(w.cfg.ReloadConfigMaps, key)
 				}),
 			},
 		},
