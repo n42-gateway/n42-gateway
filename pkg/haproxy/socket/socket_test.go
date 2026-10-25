@@ -248,7 +248,7 @@ func TestHAProxyProcs(t *testing.T) {
 
 `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 1, RPID: 0, Reloads: 0},
+				Master: Proc{Type: "master", PID: 1, RPID: 0, Reloads: 0, Uptime: "0d00h00m08s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 			},
 		},
 		// 3
@@ -262,9 +262,9 @@ func TestHAProxyProcs(t *testing.T) {
 
 `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 1, RPID: 0, Reloads: 1},
+				Master: Proc{Type: "master", PID: 1, RPID: 0, Reloads: 1, Uptime: "0d00h00m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				Workers: []Proc{
-					{Type: "worker", PID: 2, RPID: 1, Reloads: 0},
+					{Type: "worker", PID: 2, RPID: 1, Reloads: 0, Uptime: "0d00h00m00s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				},
 			},
 		},
@@ -280,12 +280,12 @@ func TestHAProxyProcs(t *testing.T) {
 
 `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 1, RPID: 0, Reloads: 2},
+				Master: Proc{Type: "master", PID: 1, RPID: 0, Reloads: 2, Uptime: "0d00h01m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				Workers: []Proc{
-					{Type: "worker", PID: 3, RPID: 1, Reloads: 0},
+					{Type: "worker", PID: 3, RPID: 1, Reloads: 0, Uptime: "0d00h00m00s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				},
 				OldWorkers: []Proc{
-					{Type: "worker", PID: 2, RPID: 1, Reloads: 1},
+					{Type: "worker", PID: 2, RPID: 1, Reloads: 1, Uptime: "0d00h00m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				},
 			},
 		},
@@ -300,9 +300,9 @@ func TestHAProxyProcs(t *testing.T) {
 
 `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 1, RPID: 0, Reloads: 3},
+				Master: Proc{Type: "master", PID: 1, RPID: 0, Reloads: 3, Uptime: "0d00h02m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				OldWorkers: []Proc{
-					{Type: "worker", PID: 3, RPID: 1, Reloads: 2},
+					{Type: "worker", PID: 3, RPID: 1, Reloads: 2, Uptime: "0d00h01m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				},
 			},
 		},
@@ -321,15 +321,15 @@ func TestHAProxyProcs(t *testing.T) {
 
 `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 1001, RPID: 0, Reloads: 1128},
+				Master: Proc{Type: "master", PID: 1001, RPID: 0, Reloads: 1128, Uptime: "0d00h02m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				Workers: []Proc{
-					{Type: "worker", PID: 3115, RPID: 1001, Reloads: 11},
-					{Type: "worker", PID: 3116, RPID: 1002, Reloads: 11},
+					{Type: "worker", PID: 3115, RPID: 1001, Reloads: 11, Uptime: "0d00h00m00s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
+					{Type: "worker", PID: 3116, RPID: 1002, Reloads: 11, Uptime: "0d00h00m00s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				},
 				OldWorkers: []Proc{
-					{Type: "worker", PID: 2112, RPID: 1001, Reloads: 128},
-					{Type: "worker", PID: 2113, RPID: 1002, Reloads: 128},
-					{Type: "worker", PID: 2114, RPID: 1003, Reloads: 128},
+					{Type: "worker", PID: 2112, RPID: 1001, Reloads: 128, Uptime: "0d00h01m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
+					{Type: "worker", PID: 2113, RPID: 1002, Reloads: 128, Uptime: "0d00h01m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
+					{Type: "worker", PID: 2114, RPID: 1003, Reloads: 128, Uptime: "0d00h01m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				},
 			},
 		},
@@ -341,10 +341,10 @@ func TestHAProxyProcs(t *testing.T) {
 3115            worker          1001            11              0d00h00m00s     2.2.3-0e58a34
 3116            worker          1002  `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 1001, RPID: 0, Reloads: 1128},
+				Master: Proc{Type: "master", PID: 1001, RPID: 0, Reloads: 1128, Uptime: "0d00h02m28s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
 				Workers: []Proc{
-					{Type: "worker", PID: 3115, RPID: 1001, Reloads: 11},
-					{Type: "worker", PID: 3116, RPID: 1002, Reloads: 0},
+					{Type: "worker", PID: 3115, RPID: 1001, Reloads: 11, Uptime: "0d00h00m00s", Version: ProcVersion{Major: 2, Minor: 2, Patch: 3, Hash: "0e58a34"}},
+					{Type: "worker", PID: 3116, RPID: 1002, Reloads: 0, Uptime: "", Version: ProcVersion{}},
 				},
 			},
 		},
@@ -357,9 +357,9 @@ func TestHAProxyProcs(t *testing.T) {
 # programs
 `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 94292, Reloads: 0, Failed: 0, Uptime: "0d00h00m04s", Version: "2.5.3-abf078b"},
+				Master: Proc{Type: "master", PID: 94292, Reloads: 0, Failed: 0, Uptime: "0d00h00m04s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
 				Workers: []Proc{
-					{Type: "worker", PID: 94293, Reloads: 0, Uptime: "0d00h00m04s", Version: "2.5.3-abf078b"},
+					{Type: "worker", PID: 94293, Reloads: 0, Uptime: "0d00h00m04s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
 				},
 			},
 		},
@@ -372,9 +372,9 @@ func TestHAProxyProcs(t *testing.T) {
 # programs
 `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 94292, Reloads: 1035, Failed: 57, Uptime: "0d00h09m40s", Version: "2.5.3-abf078b"},
+				Master: Proc{Type: "master", PID: 94292, Reloads: 1035, Failed: 57, Uptime: "0d00h09m40s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
 				Workers: []Proc{
-					{Type: "worker", PID: 913, Reloads: 57, Uptime: "0d00h04m45s", Version: "2.5.3-abf078b"},
+					{Type: "worker", PID: 913, Reloads: 57, Uptime: "0d00h04m45s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
 				},
 			},
 		},
@@ -394,17 +394,17 @@ func TestHAProxyProcs(t *testing.T) {
 # programs
 `},
 			expOutput: &ProcTable{
-				Master: Proc{Type: "master", PID: 2965, Reloads: 1420, Failed: 0, Uptime: "0d00h11m09s", Version: "2.5.3-abf078b"},
+				Master: Proc{Type: "master", PID: 2965, Reloads: 1420, Failed: 0, Uptime: "0d00h11m09s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
 				Workers: []Proc{
-					{Type: "worker", PID: 10668, Reloads: 0, Uptime: "0d00h00m59s", Version: "2.5.3-abf078b"},
+					{Type: "worker", PID: 10668, Reloads: 0, Uptime: "0d00h00m59s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
 				},
 				OldWorkers: []Proc{
-					{Type: "worker", PID: 9529, Reloads: 240, Uptime: "0d00h01m50s", Version: "2.5.3-abf078b"},
-					{Type: "worker", PID: 9463, Reloads: 254, Uptime: "0d00h01m53s", Version: "2.5.3-abf078b"},
-					{Type: "worker", PID: 9401, Reloads: 268, Uptime: "0d00h01m56s", Version: "2.5.3-abf078b"},
-					{Type: "worker", PID: 9335, Reloads: 282, Uptime: "0d00h01m59s", Version: "2.5.3-abf078b"},
-					{Type: "worker", PID: 9273, Reloads: 296, Uptime: "0d00h02m02s", Version: "2.5.3-abf078b"},
-					{Type: "worker", PID: 9209, Reloads: 310, Uptime: "0d00h02m05s", Version: "2.5.3-abf078b"},
+					{Type: "worker", PID: 9529, Reloads: 240, Uptime: "0d00h01m50s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
+					{Type: "worker", PID: 9463, Reloads: 254, Uptime: "0d00h01m53s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
+					{Type: "worker", PID: 9401, Reloads: 268, Uptime: "0d00h01m56s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
+					{Type: "worker", PID: 9335, Reloads: 282, Uptime: "0d00h01m59s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
+					{Type: "worker", PID: 9273, Reloads: 296, Uptime: "0d00h02m02s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
+					{Type: "worker", PID: 9209, Reloads: 310, Uptime: "0d00h02m05s", Version: ProcVersion{Major: 2, Minor: 5, Patch: 3, Hash: "abf078b"}},
 				},
 			},
 		},
