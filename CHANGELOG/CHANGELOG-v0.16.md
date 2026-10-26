@@ -4,6 +4,10 @@
 * [Upgrade notes - read before upgrade from v0.15!](#upgrade-notes)
   * [Deprecated command-line options](#deprecated-command-line-options)
 * [Contributors](#contributors)
+* [v0.16.3](#v0163)
+  * [Reference](#reference-r3)
+  * [Release notes](#release-notes-r3)
+  * [Fixes and Improvements](#fixes-and-improvements-r3)
 * [v0.16.2](#v0162)
   * [Reference](#reference-r2)
   * [Release notes](#release-notes-r2)
@@ -67,6 +71,38 @@ The `--enable-endpointslices-api` command-line option was deprecated on v0.16 an
 * Pedro Gonçalves ([PerGon](https://github.com/PerGon))
 * Till! ([till](https://github.com/till))
 * Vladimir Kozhukalov ([kozhukalov](https://github.com/kozhukalov))
+
+# v0.16.3
+
+## Reference (r3)
+
+* Changelog and release notes: [v0.16.3](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.16.md#v0163)
+* Release date: `2026-10-26`
+* Helm chart: `--version 0.16.3`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.16.3`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.16.3`
+* Embedded HAProxy version: `2.8.31`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.16.3`
+
+## Release notes (r3)
+
+This release fixes known CVEs found on v0.16 branch:
+
+- Updating base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+- Updating embedded HAProxy image, which fixes known CVEs in the HTTP/2 multiplexer and HTTP/1 parser.
+
+Changes in dependencies:
+
+- embedded haproxy from 2.8.28 to 2.8.31
+- go from 1.26.8 to 1.26.10
+
+## Fixes and improvements (r3)
+
+New fixes and improvements since `v0.16.2`:
+
+* bump dependencies [baaed24](https://github.com/n42-gateway/n42-gateway/commit/baaed24b8d4c13f64e2a810c0628aabd4d7a44b4) (Joao Morais)
+* bump go from 1.26.8 to 1.26.10 [83d077b](https://github.com/n42-gateway/n42-gateway/commit/83d077b60387a121508d351581a08df5cf276285) (Joao Morais)
+* bump embedded haproxy from 2.8.28 to 2.8.31 [8229d0a](https://github.com/n42-gateway/n42-gateway/commit/8229d0a81a0d8f239a7a8b265eaa76529770e261) (Joao Morais)
 
 # v0.16.2
 
