@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "update": "npm i --save-dev autoprefixer@latest postcss-cli@latest"
+  },
   "dependencies": {},
   "devDependencies": {
     "autoprefixer": "^9.6.1",
