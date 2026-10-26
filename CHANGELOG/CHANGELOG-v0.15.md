@@ -6,6 +6,10 @@
   * [Upgrading with embedded Acme](#upgrading-with-embedded-acme)
   * [Upgrading with custom repositories](#upgrading-with-custom-repositories)
 * [Contributors](#contributors)
+* [v0.15.6](#v0156)
+  * [Reference](#reference-r6)
+  * [Release notes](#release-notes-r6)
+  * [Fixes and improvements](#fixes-and-improvements-r6)
 * [v0.15.5](#v0155)
   * [Reference](#reference-r5)
   * [Release notes](#release-notes-r5)
@@ -156,6 +160,38 @@ See the full syntax and default values in the [README.md](https://github.com/hap
 * RT ([hedgieinsocks](https://github.com/hedgieinsocks))
 * tomklapka ([tomklapka](https://github.com/tomklapka))
 * Tomasz Zurkowski ([doriath](https://github.com/doriath))
+
+# v0.15.6
+
+## Reference (r6)
+
+* Changelog and release notes: [v0.15.6](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.15.md#v0156)
+* Release date: `2026-10-26`
+* Helm chart: `--version 0.15.6`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.15.6`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.15.6`
+* Embedded HAProxy version: `2.6.35`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.15.6`
+
+## Release notes (r6)
+
+This release fixes known CVEs found on v0.15 branch:
+
+- Updating base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+- Updating embedded HAProxy image, which fixes known CVEs in the HTTP/2 multiplexer and HTTP/1 parser.
+
+Changes in dependencies:
+
+- embedded haproxy from 2.6.33 to 2.6.35
+- go from 1.26.8 to 1.26.10
+
+## Fixes and improvements (r6)
+
+New fixes and improvements since `v0.15.5`:
+
+* bump dependencies [ab48c76](https://github.com/n42-gateway/n42-gateway/commit/ab48c7674a06a5ed47e6012e5641700a184c917b) (Joao Morais)
+* bump go from 1.26.8 to 1.26.10 [047af8c](https://github.com/n42-gateway/n42-gateway/commit/047af8c828114923e1bf1043fa3eebe155257f85) (Joao Morais)
+* bump embedded haproxy from 2.6.33 to 2.6.35 [83512a6](https://github.com/n42-gateway/n42-gateway/commit/83512a6bb5e56ae5bdb40d0d910f600e88cb52d5) (Joao Morais)
 
 # v0.15.5
 
