@@ -3,6 +3,10 @@
 * [Major improvements](#major-improvements)
 * [Upgrade notes - read before upgrade from v0.12!](#upgrade-notes)
 * [Contributors](#contributors)
+* [v0.13.21](#v01321)
+  * [Reference](#reference-r21)
+  * [Release notes](#release-notes-r21)
+  * [Fixes and improvements](#fixes-and-improvements-r21)
 * [v0.13.20](#v01320)
   * [Reference](#reference-r20)
   * [Release notes](#release-notes-r20)
@@ -155,6 +159,35 @@ Breaking backward compatibility from v0.12
 * Roman Gherta ([rgherta](https://github.com/rgherta))
 * ssanders1449 ([ssanders1449](https://github.com/ssanders1449))
 * Wojciech Chojnowski ([DCkQ6](https://github.com/DCkQ6))
+
+# v0.13.21
+
+## Reference (r21)
+
+* Changelog and release notes: [v0.13.21](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.13.md#v01321)
+* Release date: `2026-10-26`
+* Helm chart: `--version 0.13.21`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.13.21`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.13.21`
+* Embedded HAProxy version: `2.4.36`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.13.21`
+
+## Release notes (r21)
+
+This release fixes known CVEs found on v0.13 branch:
+
+- Updating base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+
+Dependencies:
+
+- go from 1.26.8 to 1.26.10
+
+## Fixes and improvements (r21)
+
+Fixes and improvements since `v0.13.20`:
+
+* bump dependencies [0f170d7](https://github.com/n42-gateway/n42-gateway/commit/0f170d7a3810a60c914978ef3cddb211a86dad36) (Joao Morais)
+* bump go from 1.26.8 to 1.26.10 [a29c083](https://github.com/n42-gateway/n42-gateway/commit/a29c08371c7895b281f2f94f53a1c3a3dfc35e2e) (Joao Morais)
 
 # v0.13.20
 
