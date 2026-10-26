@@ -75,7 +75,7 @@ N42 Gateway uses [Helm](https://helm.sh) chart to install and configure the cont
     $ helm upgrade haproxy-ingress haproxy-ingress/haproxy-ingress\
       --install\
       --create-namespace --namespace ingress-controller\
-      --version 0.16.2\
+      --version 0.16.3\
       -f haproxy-ingress-values.yaml
     ```
 
