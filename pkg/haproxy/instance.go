@@ -865,9 +865,19 @@ func (i *instance) reloadWorker() (socket.Proc, error) {
 
 func (i *instance) waitWorker(prevProc socket.Proc) error {
 	out, err := socket.HAProxyProcs(i.options.StopCtx, i.conns.Master())
-	for err == nil && out.Master.PID == prevProc.PID && out.Master.Reloads <= prevProc.Reloads {
-		// Continues to wait until we can see `Reloads` greater than the previous one.
-		// This is needed on 2.6 and older, whose `reload` command runs async.
+	if err == nil {
+		version := out.Master.Version
+		if version.Major > 2 || (version.Major == 2 && version.Minor >= 7) {
+			// 2.7+ reloads synchronous, can skip waiting.
+			return nil
+		}
+	}
+	// This is 2.6 or older, `reload` command runs async, need to check if it finished and succeeded.
+	for err == nil && out.Master.PID == prevProc.PID && out.Master.Reloads == prevProc.Reloads {
+		// Continues to wait until we can see `Reloads` different than the previous one:
+		// * If equals, it means that an asynchronous reload is still running
+		// * If greater, the asynchronous reload finished
+		// * If smaller, it is external HAProxy, it restarted (either crash or liveness), and master PID is still the same (usually PID 1)
 		select {
 		case <-time.After(time.Second):
 		case <-i.options.StopCtx.Done():
