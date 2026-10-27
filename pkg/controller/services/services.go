@@ -284,6 +284,10 @@ func (s *Services) ReconcileIngress(ctx context.Context, changed *convtypes.Chan
 			errmsg = "error trying to synchronize address status"
 		}
 	}
+	if err != nil {
+		// changed objects of this pass are consumed and their status might not be synced
+		s.svcaddress.requireFullSync()
+	}
 	s.log.WithValues("id", s.updateCount, "success", err == nil).WithValues(timer.AsValues("total")...).Info("finish reconciliation")
 	if err != nil && errmsg != "" {
 		err = fmt.Errorf("%s: %w", errmsg, err)

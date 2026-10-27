@@ -1131,6 +1131,46 @@ Request forbidden by administrative rules.
 		f.RequireIngressStatus(ctx, t, ing)
 	})
 
+	t.Run("should update ingress status after a failed haproxy reload", func(t *testing.T) {
+		// t.Parallel() // non parallel, the broken ingress makes every haproxy reload fail
+		testCases := map[string]struct {
+			deleteBroken bool
+		}{
+			"broken ingress is fixed":   {deleteBroken: false},
+			"broken ingress is deleted": {deleteBroken: true},
+		}
+		for name, test := range testCases {
+			t.Run(name, func(t *testing.T) {
+				svc := f.CreateService(ctx, t, httpServerPort)
+				broken, _ := f.CreateIngress(ctx, t, svc,
+					options.AddConfigKeyAnnotation(ingtypes.BackConfigBackend, "invalid-haproxy-keyword"),
+				)
+				ing, hostname := f.CreateIngress(ctx, t, svc)
+
+				// wait for ing to be synced in a pass whose reload fails due to broken
+				require.EventuallyWithT(t, func(collect *assert.CollectT) {
+					hosts, err := os.ReadFile(framework.LocalFSPrefix + "/etc/haproxy/maps/_front_http_host__prefix.map")
+					if assert.NoError(collect, err) {
+						assert.Contains(collect, string(hosts), hostname)
+					}
+				}, framework.CommonTimeout, framework.CommonInterval)
+
+				if test.deleteBroken {
+					err := f.Client().Delete(ctx, broken)
+					require.NoError(t, err)
+				} else {
+					err := f.Client().Get(ctx, client.ObjectKeyFromObject(broken), broken)
+					require.NoError(t, err)
+					delete(broken.Annotations, framework.AnnotationPrefix+ingtypes.BackConfigBackend)
+					err = f.Client().Update(ctx, broken)
+					require.NoError(t, err)
+					f.RequireIngressStatus(ctx, t, broken)
+				}
+				f.RequireIngressStatus(ctx, t, ing)
+			})
+		}
+	})
+
 	t.Run("should override old status", func(t *testing.T) {
 		t.Parallel()
 
