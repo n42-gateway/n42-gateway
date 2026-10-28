@@ -5676,6 +5676,76 @@ d1.local#/ d1
 	c.logger.CompareLogging(defaultLogging)
 }
 
+func TestInstanceRedirectToDefaultHost(t *testing.T) {
+	c := setup(t)
+	defer c.teardown()
+
+	c.config.global.NoRedirects = []string{"/.well-known/acme-challenge"}
+
+	fhttp := c.httpFrontend(80)
+	fhttp.RedirectToCode = 302
+	fhttps := c.httpsFrontend(443)
+	fhttps.RedirectToCode = 301
+
+	b := c.config.Backends().AcquireBackend("d1", "app", "8080")
+	b.Endpoints = []*hatypes.Endpoint{endpointS1}
+
+	h := fhttp.AcquireHost("d1.local")
+	h.AddPath(b, "/", hatypes.MatchBegin)
+	h = fhttp.AcquireHost(hatypes.DefaultHost)
+	h.AddPath(b, "/", hatypes.MatchBegin)
+	h.AddRedirect("/app", hatypes.MatchBegin, "https://app.local")
+
+	h = fhttps.AcquireHost(hatypes.DefaultHost)
+	h.AddRedirect("/", hatypes.MatchPrefix, "https://app.local")
+
+	c.Update()
+	c.checkConfig(`
+<<global>>
+<<defaults>>
+backend d1_app_8080
+    mode http
+    server s1 172.17.0.11:8080 weight 100
+<<backends-default>>
+frontend _front_http
+    mode http
+    bind :80
+    <<set-req-base>>
+    <<http-headers>>
+    http-request set-var(req.backend) var(req.base),lower,map_beg(/etc/haproxy/maps/_front_http_host__begin.map)
+    http-request set-var(req.defaultbackend) str(<default>\#),concat(,req.path),lower,map_beg(/etc/haproxy/maps/_front_http_defaulthost__begin.map) if !{ var(req.backend) -m found }
+    http-request set-var(req.defaultredirto) str(<default>\#),concat(,req.path),lower,map_beg(/etc/haproxy/maps/_front_http_defaulthost_redir_to__begin.map) if !{ path_beg "/.well-known/acme-challenge" } !{ var(req.backend) -m found }
+    http-request redirect location %[var(req.defaultredirto)] code 302 if !{ path_beg "/.well-known/acme-challenge" } { var(req.defaultredirto) -m found }
+    use_backend %[var(req.backend)] if { var(req.backend) -m found }
+    use_backend %[var(req.defaultbackend)]
+    default_backend _error404
+frontend _front_https
+    mode http
+    bind :443 ssl alpn h2,http/1.1 crt-list /etc/haproxy/maps/_front_https_bind_crt.list ca-ignore-err all crt-ignore-err all
+    <<set-req-base>>
+    http-request set-var(req.defaultredirto) str(<default>\#),concat(,req.path),map_dir(/etc/haproxy/maps/_front_https_defaulthost_redir_to__prefix.map) if !{ path_beg "/.well-known/acme-challenge" } !{ var(req.hostbackend) -m found }
+    http-request redirect location %[var(req.defaultredirto)] code 301 if !{ path_beg "/.well-known/acme-challenge" } { var(req.defaultredirto) -m found }
+    <<https-headers>>
+    use_backend %[var(req.hostbackend)] if { var(req.hostbackend) -m found }
+    use_backend %[var(req.defaultbackend)]
+    default_backend _error404
+<<support>>
+`)
+	c.checkMap("_front_http_host__begin.map", `
+d1.local#/ d1_app_8080
+`)
+	c.checkMap("_front_http_defaulthost__begin.map", `
+<default>#/ d1_app_8080
+`)
+	c.checkMap("_front_http_defaulthost_redir_to__begin.map", `
+<default>#/app https://app.local
+`)
+	c.checkMap("_front_https_defaulthost_redir_to__prefix.map", `
+<default>#/ https://app.local
+`)
+	c.logger.CompareLogging(defaultLogging)
+}
+
 func TestInstanceSyslog(t *testing.T) {
 	c := setup(t)
 	defer c.teardown()

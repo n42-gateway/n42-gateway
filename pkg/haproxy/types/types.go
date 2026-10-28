@@ -441,11 +441,12 @@ type HostsMaps struct {
 
 // FrontendCommonMaps ...
 type FrontendCommonMaps struct {
-	DefaultHostMap   *HostsMap
-	RedirFromMap     *HostsMap
-	RedirFromRootMap *HostsMap
-	RedirToMap       *HostsMap
-	VarNamespaceMap  *HostsMap
+	DefaultHostMap        *HostsMap
+	DefaultHostRedirToMap *HostsMap
+	RedirFromMap          *HostsMap
+	RedirFromRootMap      *HostsMap
+	RedirToMap            *HostsMap
+	VarNamespaceMap       *HostsMap
 }
 
 // FrontendHTTPMaps ...
