@@ -5627,6 +5627,55 @@ frontend _front_http
 	}
 }
 
+func TestInstanceRedirectToVarNamespace(t *testing.T) {
+	c := setup(t)
+	defer c.teardown()
+
+	f := c.httpFrontend(80)
+	f.RedirectToCode = 302
+
+	b := c.config.Backends().AcquireBackend("d1", "app", "8080")
+	b.Endpoints = []*hatypes.Endpoint{endpointS1}
+	h := f.AcquireHost("d1.local")
+	h.VarNamespace = true
+	h.AddPath(b, "/", hatypes.MatchBegin)
+	h.AddRedirect("/app", hatypes.MatchBegin, "https://app.local")
+
+	c.Update()
+	c.checkConfig(`
+<<global>>
+<<defaults>>
+backend d1_app_8080
+    mode http
+    server s1 172.17.0.11:8080 weight 100
+<<backends-default>>
+frontend _front_http
+    mode http
+    bind :80
+    <<set-req-base>>
+    http-request set-var(txn.namespace) var(req.base),lower,map_beg(/etc/haproxy/maps/_front_http_namespace__begin.map)
+    http-request set-var(txn.namespace) str(-) if !{ var(txn.namespace) -m found }
+    <<http-headers>>
+    http-request set-var(req.redirto) var(req.base),lower,map_beg(/etc/haproxy/maps/_front_http_redir_to__begin.map)
+    http-request redirect location %[var(req.redirto)] code 302 if { var(req.redirto) -m found }
+    http-request set-var(req.backend) var(req.base),lower,map_beg(/etc/haproxy/maps/_front_http_host__begin.map)
+    use_backend %[var(req.backend)] if { var(req.backend) -m found }
+    default_backend _error404
+<<support>>
+`)
+	c.checkMap("_front_http_host__begin.map", `
+d1.local#/ d1_app_8080
+`)
+	c.checkMap("_front_http_redir_to__begin.map", `
+d1.local#/app https://app.local
+`)
+	c.checkMap("_front_http_namespace__begin.map", `
+d1.local#/app -
+d1.local#/ d1
+`)
+	c.logger.CompareLogging(defaultLogging)
+}
+
 func TestInstanceSyslog(t *testing.T) {
 	c := setup(t)
 	defer c.teardown()
