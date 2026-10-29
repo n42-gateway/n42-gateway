@@ -48,12 +48,13 @@ func initSvcAddress(ctx context.Context, config *config.Config, client client.Cl
 }
 
 type svcAddress struct {
-	log   logr.Logger
-	cfg   *config.Config
-	cli   client.Client
-	run   bool
-	cache *c
-	curr  []networking.IngressLoadBalancerIngress
+	log      logr.Logger
+	cfg      *config.Config
+	cli      client.Client
+	run      bool
+	cache    *c
+	curr     []networking.IngressLoadBalancerIngress
+	fullSync bool
 }
 
 func (s *svcAddress) Start(ctx context.Context) error {
@@ -77,13 +78,18 @@ func (s *svcAddress) checkChanged(ctx context.Context, timer *utils.Timer, chang
 	if err != nil {
 		return err
 	}
-	if !reflect.DeepEqual(s.curr, lb) {
-		s.log.Info("list of load balancers changed, checking all address status", "old", s.curr, "new", lb)
+	if s.fullSync || !reflect.DeepEqual(s.curr, lb) {
+		if s.fullSync {
+			s.log.Info("full sync requested, checking all address status", "addresses", lb)
+		} else {
+			s.log.Info("list of load balancers changed, checking all address status", "old", s.curr, "new", lb)
+		}
 		if err := s.updateAllResources(lb); err != nil {
 			return fmt.Errorf("error updating resources: %w", err)
 		}
 		s.log.Info("all address status are updated")
 		s.curr = lb
+		s.fullSync = false
 		return nil
 	}
 
@@ -104,6 +110,11 @@ func (s *svcAddress) checkChanged(ctx context.Context, timer *utils.Timer, chang
 		return fmt.Errorf("error syncing address status: %w", shrinkErrors(errs))
 	}
 	return nil
+}
+
+// requireFullSync makes the next checkChanged update the status of all resources.
+func (s *svcAddress) requireFullSync() {
+	s.fullSync = true
 }
 
 func (s *svcAddress) updateAllResources(lb []networking.IngressLoadBalancerIngress) error {
