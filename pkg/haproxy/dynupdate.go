@@ -57,7 +57,7 @@ type epPair struct {
 func (i *instance) newDynUpdater() *dynUpdater {
 	return &dynUpdater{
 		logger:  i.logger,
-		config:  i.config.(*config),
+		config:  i.config,
 		hatmpl:  i.haproxyTmpl,
 		socket:  i.conns.DynUpdate(),
 		metrics: i.metrics,

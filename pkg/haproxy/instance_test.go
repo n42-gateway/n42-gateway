@@ -6570,15 +6570,16 @@ backend d3_app_8080
 INFO-V(2) updated main cfg and 2 backend file(s): [000 002]` + defaultLogging)
 }
 
-func TestInstanceForceReload(t *testing.T) {
+func TestInstanceNeedReload(t *testing.T) {
 	c := setup(t)
 	defer c.teardown()
 	c.Update()
 	c.logger.CompareLogging(defaultLogging)
-	c.config.SetForceReload()
+	c.config.needReload = true
 	c.Update()
 	c.logger.CompareLogging(`
-INFO-V(2) need to reload due to mounted volume file change` + defaultLogging)
+INFO old and new configurations match
+INFO need to reload due to mounted volume file change` + defaultLogging)
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

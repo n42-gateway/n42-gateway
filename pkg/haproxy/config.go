@@ -46,8 +46,7 @@ type Config interface {
 	Clear()
 	Shrink()
 	Commit()
-	SetForceReload()
-	ForceReload() bool
+	SetNeedReload()
 }
 
 type config struct {
@@ -55,7 +54,7 @@ type config struct {
 	options  options
 	acmeData *hatypes.AcmeData
 	// haproxy internal state
-	forceReload bool
+	needReload  bool
 	globalOld   *hatypes.Global
 	global      *hatypes.Global
 	frontends   *hatypes.Frontends
@@ -530,7 +529,7 @@ func (c *config) Shrink() {
 }
 
 func (c *config) Commit() {
-	c.forceReload = false
+	c.needReload = false
 	if !reflect.DeepEqual(c.globalOld, c.global) {
 		// globals still uses the old deepCopy+fullParsing+deepEqual strategy
 		var globalOld hatypes.Global
@@ -547,12 +546,8 @@ func (c *config) Commit() {
 	c.acmeData.Storages().Commit()
 }
 
-func (c *config) SetForceReload() {
-	c.forceReload = true
-}
-
-func (c *config) ForceReload() bool {
-	return c.forceReload
+func (c *config) SetNeedReload() {
+	c.needReload = true
 }
 
 func (c *config) hasCommittedData() bool {

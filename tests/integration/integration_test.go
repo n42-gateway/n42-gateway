@@ -33,6 +33,44 @@ import (
 	"github.com/n42-gateway/n42-gateway/tests/framework/options"
 )
 
+func TestIntegrationControllerOptions(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("should apply mounted configmaps", func(t *testing.T) {
+		const cmNamespace = "default"
+		const cmName = "reload-trigger"
+
+		f := framework.NewFramework(ctx, t,
+			options.OptOverride(func(opt *config.Options) {
+				opt.ReloadOnConfigMapChange = cmNamespace + "/" + cmName
+			}),
+		)
+
+		cm := corev1.ConfigMap{}
+		cm.Namespace = cmNamespace
+		cm.Name = cmName
+		cm.Data = map[string]string{"payload": "v1"}
+		require.NoError(t, f.Client().Create(ctx, &cm))
+		t.Cleanup(func() {
+			del := corev1.ConfigMap{}
+			del.Namespace = cmNamespace
+			del.Name = cmName
+			assert.NoError(t, client.IgnoreNotFound(f.Client().Delete(ctx, &del)))
+		})
+
+		f.StartController(ctx, t)
+		pidBefore := f.HAProxyPid(t)
+
+		require.NoError(t, f.Client().Get(ctx, client.ObjectKeyFromObject(&cm), &cm))
+		cm.Data["payload"] = "v2"
+		require.NoError(t, f.Client().Update(ctx, &cm))
+
+		require.EventuallyWithT(t, func(collect *assert.CollectT) {
+			assert.NotEqual(collect, pidBefore, f.HAProxyPid(t))
+		}, framework.CommonTimeout, framework.CommonInterval)
+	})
+}
+
 func TestIntegrationIngress(t *testing.T) {
 	ctx := context.Background()
 

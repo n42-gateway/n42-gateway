@@ -148,15 +148,13 @@ func (w *watchers) handlersCore() []*hdlr {
 	cmChange := func(o client.Object) {
 		cm := o.(*api.ConfigMap)
 		key := cm.Namespace + "/" + cm.Name
-		switch key {
-		case w.cfg.ConfigMapName:
+		switch {
+		case key == w.cfg.ConfigMapName:
 			w.ch.GlobalConfigMapDataNew = cm.Data
-		case w.cfg.TCPConfigMapName:
+		case key == w.cfg.TCPConfigMapName:
 			w.ch.TCPConfigMapDataNew = cm.Data
-		default:
-			if slices.Contains(w.cfg.ReloadConfigMaps, key) {
-				w.ch.ReloadOnConfigMapChange = true
-			}
+		case slices.Contains(w.cfg.ReloadConfigMaps, key):
+			w.ch.NeedReload = true
 		}
 	}
 	return []*hdlr{

@@ -82,10 +82,10 @@ type Options struct {
 	PublishAddress           string
 	IPMode                   string
 	TCPConfigMapName         string
-	ReloadOnConfigMapChange  string
 	AnnPrefix                string
 	RateLimitUpdate          float64
 	ReloadInterval           time.Duration
+	ReloadOnConfigMapChange  string
 	ReloadRetry              time.Duration
 	WaitBeforeUpdate         time.Duration
 	ResyncPeriod             time.Duration

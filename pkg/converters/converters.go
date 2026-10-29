@@ -54,6 +54,9 @@ func (c *converters) Sync() error {
 	ingressConverter := ingress.NewIngressConverter(c.options, c.haproxy, changed)
 	gatewayConverter := gateway.NewGatewayConverter(c.options, c.haproxy, changed, ingressConverter)
 
+	if changed.NeedReload {
+		c.haproxy.SetNeedReload()
+	}
 	needFullSync := changed.NeedFullSync ||
 		globalConverter.NeedFullSync() ||
 		gatewayConverter.NeedFullSync() ||

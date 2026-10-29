@@ -947,10 +947,10 @@ type Config struct {
 	PublishService           string
 	RateLimitUpdate          float64
 	ReadyzURL                string
+	ReloadConfigMaps         []string
 	ReloadInterval           time.Duration
 	ReloadRetry              time.Duration
 	ReloadStrategy           string
-	ReloadConfigMaps         []string
 	ResyncPeriod             *time.Duration
 	RootContext              context.Context
 	Scheme                   *runtime.Scheme
