@@ -148,11 +148,13 @@ func (w *watchers) handlersCore() []*hdlr {
 	cmChange := func(o client.Object) {
 		cm := o.(*api.ConfigMap)
 		key := cm.Namespace + "/" + cm.Name
-		switch key {
-		case w.cfg.ConfigMapName:
+		switch {
+		case key == w.cfg.ConfigMapName:
 			w.ch.GlobalConfigMapDataNew = cm.Data
-		case w.cfg.TCPConfigMapName:
+		case key == w.cfg.TCPConfigMapName:
 			w.ch.TCPConfigMapDataNew = cm.Data
+		case slices.Contains(w.cfg.ReloadConfigMaps, key):
+			w.ch.NeedReload = true
 		}
 	}
 	return []*hdlr{
@@ -170,7 +172,9 @@ func (w *watchers) handlersCore() []*hdlr {
 				predicate.NewPredicateFuncs(func(o client.Object) bool {
 					cm := o.(*api.ConfigMap)
 					key := cm.Namespace + "/" + cm.Name
-					return key == w.cfg.ConfigMapName || key == w.cfg.TCPConfigMapName
+					return key == w.cfg.ConfigMapName ||
+						key == w.cfg.TCPConfigMapName ||
+						slices.Contains(w.cfg.ReloadConfigMaps, key)
 				}),
 			},
 		},

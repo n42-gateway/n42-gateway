@@ -63,6 +63,7 @@ The following command-line options are supported:
 | [`--ready-check-path`](#stats)                          | path                       | `/readyz`               | v0.15 |
 | [`--reload-interval`](#reload-interval)                 | time                       | `0`                     | v0.13 |
 | [`--reload-retry`](#reload-retry)                       | time                       | `30s`                   | v0.15 |
+| [`--reload-on-configmap-change`](#reload-on-configmap-change) | namespace/name[,...] |                         | v0.17 |
 | [`--reload-strategy`](#reload-strategy)                 | [native\|reusesocket]      | `reusesocket`           |       |
 | [`--report-node-internal-ip-address`](#report-node-internal-ip-address) | [true\|false] | `false`              |       |
 | [`--sort-backends`](#sort-backends)                     | [true\|false]              | `false`                 |       |
@@ -583,6 +584,21 @@ one will delay up to the configured duration to be reflected by HAProxy.
 * `--reload-retry`
 
 How long N42 Gateway should wait before trying to reload HAProxy if an error happens. Defaults to `30s`.
+
+---
+
+### reload-on-configmap-change
+
+* `--reload-on-configmap-change`
+
+Since v0.17
+
+Comma-separated list of ConfigMaps in `namespace/name` format that trigger a full HAProxy reload
+when their content changes. The ConfigMaps must be mounted as volumes in the controller pod so that
+Kubernetes propagates file updates to the container automatically.
+
+Use this flag when auxiliary configuration (e.g. a sidecar's config file) is delivered via a
+mounted ConfigMap volume and HAProxy must reload to pick up the new content.
 
 ---
 

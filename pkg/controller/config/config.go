@@ -419,6 +419,20 @@ func CreateWithConfig(ctx context.Context, restConfig *rest.Config, opt *Options
 		configLog.Info("watching for global config options - --configmap was defined", "configmap", opt.ConfigMap)
 	}
 
+	var reloadConfigMaps []string
+	for _, entry := range strings.Split(opt.ReloadOnConfigMapChange, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		ns, name, err := cache.SplitMetaNamespaceKey(entry)
+		if err != nil || ns == "" || name == "" {
+			return nil, fmt.Errorf("--reload-on-configmap-change entry %q must be in namespace/name format", entry)
+		}
+		reloadConfigMaps = append(reloadConfigMaps, entry)
+		configLog.Info("will reload HAProxy on configmap change", "configmap", entry)
+	}
+
 	if opt.DefaultSvc != "" {
 		ns, name, err := cache.SplitMetaNamespaceKey(opt.DefaultSvc)
 		if err != nil {
@@ -610,6 +624,7 @@ func CreateWithConfig(ctx context.Context, restConfig *rest.Config, opt *Options
 		ReloadInterval:           opt.ReloadInterval,
 		ReloadRetry:              opt.ReloadRetry,
 		ReloadStrategy:           opt.ReloadStrategy,
+		ReloadConfigMaps:         reloadConfigMaps,
 		ResyncPeriod:             &opt.ResyncPeriod,
 		RootContext:              rootcontext,
 		Scheme:                   scheme,
@@ -932,6 +947,7 @@ type Config struct {
 	PublishService           string
 	RateLimitUpdate          float64
 	ReadyzURL                string
+	ReloadConfigMaps         []string
 	ReloadInterval           time.Duration
 	ReloadRetry              time.Duration
 	ReloadStrategy           string

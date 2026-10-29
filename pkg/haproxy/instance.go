@@ -108,7 +108,7 @@ type instance struct {
 	failedSince *time.Time
 	logger      types.Logger
 	options     *InstanceOptions
-	config      Config
+	config      *config
 	conns       *connections
 	metrics     types.Metrics
 	//
@@ -382,7 +382,10 @@ func (i *instance) HAProxyUpdate(timer *utils.Timer) error {
 			i.logger.Info("old and new configurations match")
 			i.metrics.IncUpdateNoop()
 		}
-		return nil
+		if !i.config.needReload {
+			return nil
+		}
+		i.logger.Info("need to reload due to mounted volume file change")
 	}
 	if i.options.ReloadQueue != nil {
 		i.options.ReloadQueue.Add(nil)
