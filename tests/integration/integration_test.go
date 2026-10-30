@@ -1268,6 +1268,17 @@ Request forbidden by administrative rules.
 		f.Request(ctx, t, http.MethodGet, hostname, "/", options.ExpectResponseCode(http.StatusOK))
 	})
 
+	t.Run("should update ingress status despite haproxy reload failures", func(t *testing.T) {
+		// t.Parallel() // non parallel, the broken ingress makes every haproxy reload fail
+		svc := f.CreateService(ctx, t, httpServerPort)
+		broken, _ := f.CreateIngress(ctx, t, svc,
+			options.AddConfigKeyAnnotation(ingtypes.BackConfigBackend, "invalid-haproxy-keyword"),
+		)
+		ing, _ := f.CreateIngress(ctx, t, svc)
+		f.RequireIngressStatus(ctx, t, broken)
+		f.RequireIngressStatus(ctx, t, ing)
+	})
+
 	t.Run("should override old status", func(t *testing.T) {
 		t.Parallel()
 
