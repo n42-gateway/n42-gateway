@@ -301,7 +301,7 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 			if hasVarNamespace {
 				// add "-" on missing paths to avoid overlap
 				var ns string
-				if host.VarNamespace {
+				if host.VarNamespace && path.Backend != nil {
 					ns = path.Backend.Namespace
 				} else {
 					ns = "-"

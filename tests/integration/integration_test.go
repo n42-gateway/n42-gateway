@@ -223,6 +223,45 @@ func TestIntegrationIngress(t *testing.T) {
 		assert.True(t, resNonSub.EchoResponse.Parsed)
 	})
 
+	t.Run("should redirect-to on a var-namespace host", func(t *testing.T) {
+		t.Parallel()
+
+		svc := f.CreateService(ctx, t, httpServerPort)
+		hostname := framework.RandomName("redir-varns") + ".local"
+
+		_, _ = f.CreateIngress(ctx, t, svc,
+			options.CustomHostName(hostname),
+			options.AddConfigKeyAnnotation(ingtypes.HostVarNamespace, "true"),
+		)
+		_, _ = f.CreateIngress(ctx, t, svc,
+			options.CustomHostName(hostname),
+			options.AddConfigKeyAnnotation(ingtypes.HostVarNamespace, "true"),
+			options.AddConfigKeyAnnotation(ingtypes.BackRedirectTo, "https://example.com/"),
+			options.CustomObject(func(o client.Object) {
+				ing := o.(*networkingv1.Ingress)
+				ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Path = "/app"
+			}),
+		)
+
+		resRedir := f.Request(ctx, t, http.MethodGet, hostname, "/app",
+			options.ExpectResponseCode(http.StatusFound),
+		)
+		assert.False(t, resRedir.EchoResponse.Parsed)
+		assert.Equal(t, "https://example.com/", resRedir.HTTPResponse.Header.Get("location"))
+
+		resBackend := f.Request(ctx, t, http.MethodGet, hostname, "/",
+			options.ExpectResponseCode(http.StatusOK),
+		)
+		assert.True(t, resBackend.EchoResponse.Parsed)
+
+		// a panic on the previous reconcile would prevent new ingress from being configured
+		_, hostnameNext := f.CreateIngress(ctx, t, svc)
+		resNext := f.Request(ctx, t, http.MethodGet, hostnameNext, "/",
+			options.ExpectResponseCode(http.StatusOK),
+		)
+		assert.True(t, resNext.EchoResponse.Parsed)
+	})
+
 	t.Run("should rewrite URL", func(t *testing.T) {
 		t.Parallel()
 
