@@ -377,19 +377,19 @@ func (i *instance) HAProxyUpdate(timer *utils.Timer) error {
 				timer.Tick("validate_cfg")
 				i.updateSuccessful(err == nil)
 			}
-			i.logger.Info("haproxy updated without needing to reload. Commands sent: %d", updater.cmdCnt)
+			i.logger.InfoV(2, "haproxy updated without needing to reload. Commands sent: %d", updater.cmdCnt)
 			i.metrics.IncUpdateDynamic()
 		} else {
-			i.logger.Info("old and new configurations match")
+			i.logger.InfoV(2, "old and new configurations match")
 			i.metrics.IncUpdateNoop()
 		}
 		return nil
 	}
 	if i.config.needReload {
-		i.logger.Info("need to reload due to mounted volume file change")
+		i.logger.InfoV(2, "need to reload due to mounted volume file change")
 	}
 	if i.failedSince != nil {
-		i.logger.Info("retrying haproxy reload")
+		i.logger.InfoV(2, "need to reload due to previous reload failure")
 	}
 	if i.options.ReloadQueue != nil {
 		i.options.ReloadQueue.Add(nil)

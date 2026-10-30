@@ -1936,12 +1936,12 @@ func TestReloadAfterFailedReload(t *testing.T) {
 
 	c.Update()
 	c.logger.CompareLogging(`
-INFO old and new configurations match`)
+INFO-V(2) old and new configurations match`)
 
 	c.instance.updateSuccessful(false)
 	c.Update()
 	c.logger.CompareLogging(`
-INFO retrying haproxy reload` + defaultLogging)
+INFO-V(2) need to reload due to previous reload failure` + defaultLogging)
 }
 
 func TestPathIDsSplit(t *testing.T) {
@@ -6645,7 +6645,7 @@ func TestInstanceNeedReload(t *testing.T) {
 	c.config.needReload = true
 	c.Update()
 	c.logger.CompareLogging(`
-INFO need to reload due to mounted volume file change` + defaultLogging)
+INFO-V(2) need to reload due to mounted volume file change` + defaultLogging)
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
