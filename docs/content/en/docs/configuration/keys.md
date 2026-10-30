@@ -2470,7 +2470,7 @@ examples below.
 * `redirect-from`: Defines a source domain using hostname-like syntax, so wildcard domains can also be used. The request is redirected to the configured hostname, preserving protocol, path and query string.
 * `redirect-from-regex`: Defines a POSIX extended regular expression used to match a source domain. The regex will be used verbatim, so add `^` and `$` if strict hostname is desired and escape `\.` dots in order to strictly match them.
 * `redirect-from-code`: Which HTTP status code should be used in the redirect from. A `302` response is used by default if not configured.
-* `redirect-to`: Defines the destination URL to redirect the incoming request. The declared hostname and path are used only to match the request, the backend will not be used and it's only needed to be declared to satisfy ingress spec validation.
+* `redirect-to`: Defines the destination URL to redirect the incoming request. The declared hostname and path are used only to match the request, the backend will not be used and it's only needed to be declared to satisfy ingress spec validation. On an ingress without a hostname, the redirect applies to the default host: it is used only when no hostname/path rule matches the request, the same way default host backends are.
 * `redirect-to-code`: Which HTTP status code should be used in the redirect to. A `302` response is used by default if not configured.
 * `no-redirect-locations`: Defines a comma-separated list of paths that should be ignored by all the redirects. Default value is `/.well-known/acme-challenge`, used by ACME protocol. Configure as an empty string to make the redirect happen on all paths, including the ACME challenge.
 

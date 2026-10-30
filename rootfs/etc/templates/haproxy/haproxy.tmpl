@@ -1353,6 +1353,9 @@ frontend {{ $frontend.Name }}
 {{- template "redirectFrom" map $global $frontend $httpmaps "req.backend" }}
 
 {{- /*------------------------------------*/}}
+{{- template "redirectToDefaultHost" map $global $frontend $httpmaps "req.backend" }}
+
+{{- /*------------------------------------*/}}
 {{- template "sourceIP" map $global }}
 
 {{- /*------------------------------------*/}}
@@ -1434,6 +1437,9 @@ frontend {{ $httpsFrontendName }}
 
 {{- /*------------------------------------*/}}
 {{- template "redirectFrom" map $global $frontend $httpsmaps "req.hostbackend" }}
+
+{{- /*------------------------------------*/}}
+{{- template "redirectToDefaultHost" map $global $frontend $httpsmaps "req.hostbackend" }}
 
 {{- /*------------------------------------*/}}
 {{- if $httpsmaps.RedirFromRootMap.HasHost }}
@@ -1628,6 +1634,31 @@ frontend {{ $httpsFrontendName }}
         {{- "" }} if
         {{- if $global.NoRedirects }} !{ path_beg{{ range $global.NoRedirects }} "{{ . }}"{{ end }} }{{ end }}
         {{- "" }} { var(req.redirto) -m found }
+{{- end }}
+{{- end }}
+
+{{- /*------------------------------------*/}}
+{{- /*------------------------------------*/}}
+{{- define "redirectToDefaultHost" }}
+{{- $global := .p1 }}
+{{- $frontend := .p2 }}
+{{- $fmaps := .p3 }}
+{{- $varBe := .p4 }}
+{{- if $fmaps.DefaultHostRedirToMap.MatchFiles }}
+{{- range $match := $fmaps.DefaultHostRedirToMap.MatchFiles }}
+    http-request set-var(req.defaultredirto) str(<default>\#),concat(,req.path)
+        {{- if $match.Lower }},lower{{ end }}
+        {{- "" }},map_{{ $match.Method }}({{ $match.Filename }})
+        {{- "" }} if
+        {{- if $global.NoRedirects }} !{ path_beg{{ range $global.NoRedirects }} "{{ . }}"{{ end }} }{{ end }}
+        {{- "" }} !{ var({{ $varBe }}) -m found }
+        {{- template "httpFilters" map $match "req.defaultredirto" 0 }}
+{{- end }}
+    http-request redirect location %[var(req.defaultredirto)]
+        {{- "" }} code {{ $frontend.RedirectToCode }}
+        {{- "" }} if
+        {{- if $global.NoRedirects }} !{ path_beg{{ range $global.NoRedirects }} "{{ . }}"{{ end }} }{{ end }}
+        {{- "" }} { var(req.defaultredirto) -m found }
 {{- end }}
 {{- end }}
 

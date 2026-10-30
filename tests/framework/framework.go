@@ -1180,7 +1180,7 @@ func (*framework) CreateAuthzServer(ctx context.Context, t *testing.T, o ...opti
 }
 
 // Example: echoserver: service-name 8080 /app
-var echoHeaderRegex = regexp.MustCompile(`^echoserver: ([a-z0-9-]+) ([0-9]+) ([a-z0-9/]+)$`)
+var echoHeaderRegex = regexp.MustCompile(`^echoserver: ([a-z0-9-]+) ([0-9]+) ([a-z0-9/-]+)$`)
 
 func (*framework) CreateHTTPServer(ctx context.Context, t *testing.T, serverName string, o ...options.Server) int32 {
 	opt := options.ParseServerOptions(o...)
