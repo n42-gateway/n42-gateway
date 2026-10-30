@@ -1926,6 +1926,24 @@ INFO (test) reload was skipped
 INFO haproxy successfully reloaded (external)`)
 }
 
+func TestReloadAfterFailedReload(t *testing.T) {
+	c := setup(t)
+	defer c.teardown()
+
+	c.httpFrontend(80).AcquireHost("d1.local").AddPath(c.config.Backends().AcquireBackend("d1", "app", "8080"), "/", hatypes.MatchBegin)
+	c.Update()
+	c.logger.CompareLogging(defaultLogging)
+
+	c.Update()
+	c.logger.CompareLogging(`
+INFO-V(2) old and new configurations match`)
+
+	c.instance.updateSuccessful(false)
+	c.Update()
+	c.logger.CompareLogging(`
+INFO-V(2) need to reload due to previous reload failure` + defaultLogging)
+}
+
 func TestPathIDsSplit(t *testing.T) {
 	c := setup(t)
 	defer c.teardown()
@@ -6627,8 +6645,7 @@ func TestInstanceNeedReload(t *testing.T) {
 	c.config.needReload = true
 	c.Update()
 	c.logger.CompareLogging(`
-INFO old and new configurations match
-INFO need to reload due to mounted volume file change` + defaultLogging)
+INFO-V(2) need to reload due to mounted volume file change` + defaultLogging)
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *

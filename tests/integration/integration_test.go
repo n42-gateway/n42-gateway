@@ -1208,6 +1208,29 @@ Request forbidden by administrative rules.
 		f.RequireIngressStatus(ctx, t, ing)
 	})
 
+	t.Run("should retry haproxy reload after a transient failure", func(t *testing.T) {
+		// t.Parallel() // non parallel, the missing errorfile makes every haproxy reload fail
+		errorfile := framework.LocalFSPrefix + "/" + framework.RandomName("errorfile") + ".http"
+		svc := f.CreateService(ctx, t, httpServerPort)
+		_, hostname := f.CreateIngress(ctx, t, svc,
+			options.AddConfigKeyAnnotation(ingtypes.BackConfigBackend, "errorfile 503 "+errorfile),
+		)
+
+		// wait for ing to be synced in a pass whose reload fails due to the missing errorfile
+		require.EventuallyWithT(t, func(collect *assert.CollectT) {
+			hosts, err := os.ReadFile(framework.LocalFSPrefix + "/etc/haproxy/maps/_front_http_host__prefix.map")
+			if assert.NoError(collect, err) {
+				assert.Contains(collect, string(hosts), hostname)
+			}
+		}, framework.CommonTimeout, framework.CommonInterval)
+
+		// fixes the failure without changing any resource, only a reload retry can apply it
+		err := os.WriteFile(errorfile, []byte("HTTP/1.0 503 Service Unavailable\r\n\r\n"), 0644)
+		require.NoError(t, err)
+
+		f.Request(ctx, t, http.MethodGet, hostname, "/", options.ExpectResponseCode(http.StatusOK))
+	})
+
 	t.Run("should override old status", func(t *testing.T) {
 		t.Parallel()
 
