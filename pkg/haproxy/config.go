@@ -213,11 +213,12 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 	mapsFilenamePrefix := path.Join(c.options.mapsDir, f.Name)
 	buildCommonMaps := func(m *hatypes.FrontendCommonMaps) {
 		*m = hatypes.FrontendCommonMaps{
-			DefaultHostMap:   mapBuilder.AddMap(mapsFilenamePrefix + "_defaulthost.map"),
-			RedirFromRootMap: mapBuilder.AddMap(mapsFilenamePrefix + "_redir_fromroot.map"),
-			RedirFromMap:     mapBuilder.AddMap(mapsFilenamePrefix + "_redir_from.map"),
-			RedirToMap:       mapBuilder.AddMap(mapsFilenamePrefix + "_redir_to.map"),
-			VarNamespaceMap:  mapBuilder.AddMap(mapsFilenamePrefix + "_namespace.map"),
+			DefaultHostMap:        mapBuilder.AddMap(mapsFilenamePrefix + "_defaulthost.map"),
+			DefaultHostRedirToMap: mapBuilder.AddMap(mapsFilenamePrefix + "_defaulthost_redir_to.map"),
+			RedirFromRootMap:      mapBuilder.AddMap(mapsFilenamePrefix + "_redir_fromroot.map"),
+			RedirFromMap:          mapBuilder.AddMap(mapsFilenamePrefix + "_redir_from.map"),
+			RedirToMap:            mapBuilder.AddMap(mapsFilenamePrefix + "_redir_to.map"),
+			VarNamespaceMap:       mapBuilder.AddMap(mapsFilenamePrefix + "_namespace.map"),
 		}
 	}
 	var httpMaps *hatypes.FrontendHTTPMaps
@@ -249,7 +250,11 @@ func (c *config) writeFrontendMaps(f *hatypes.Frontend) error {
 	if defaultHost != nil && !defaultHost.SSLPassthrough {
 		for _, path := range defaultHost.Paths {
 			// using DefaultHost ID as hostname, see types.maps.go/buildMapKey()
-			commonMaps.DefaultHostMap.AddHostnamePathMapping(hatypes.DefaultHost, path, path.Backend.ID)
+			if path.Backend != nil {
+				commonMaps.DefaultHostMap.AddHostnamePathMapping(hatypes.DefaultHost, path, path.Backend.ID)
+			} else if path.RedirTo != "" {
+				commonMaps.DefaultHostRedirToMap.AddHostnamePathMapping(hatypes.DefaultHost, path, path.RedirTo)
+			}
 		}
 	}
 	defaultCrtFile := c.global.SSL.DefaultCrt.Filename
