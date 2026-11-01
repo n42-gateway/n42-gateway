@@ -366,7 +366,8 @@ func (i *instance) HAProxyUpdate(timer *utils.Timer) error {
 			i.logger.Error("haproxy failed to reload, first occurrence at %s", i.failedSince.Format("2006-01-02 15:04:05.999999 -0700 MST"))
 		}
 	}()
-	if updated {
+	needReload := i.config.needReload || i.failedSince != nil
+	if !needReload && updated {
 		if updater.cmdCnt > 0 {
 			if i.options.ValidateConfig {
 				var err error
@@ -376,16 +377,19 @@ func (i *instance) HAProxyUpdate(timer *utils.Timer) error {
 				timer.Tick("validate_cfg")
 				i.updateSuccessful(err == nil)
 			}
-			i.logger.Info("haproxy updated without needing to reload. Commands sent: %d", updater.cmdCnt)
+			i.logger.InfoV(2, "haproxy updated without needing to reload. Commands sent: %d", updater.cmdCnt)
 			i.metrics.IncUpdateDynamic()
 		} else {
-			i.logger.Info("old and new configurations match")
+			i.logger.InfoV(2, "old and new configurations match")
 			i.metrics.IncUpdateNoop()
 		}
-		if !i.config.needReload {
-			return nil
-		}
-		i.logger.Info("need to reload due to mounted volume file change")
+		return nil
+	}
+	if i.config.needReload {
+		i.logger.InfoV(2, "need to reload due to mounted volume file change")
+	}
+	if i.failedSince != nil {
+		i.logger.InfoV(2, "need to reload due to previous reload failure")
 	}
 	if i.options.ReloadQueue != nil {
 		i.options.ReloadQueue.Add(nil)
