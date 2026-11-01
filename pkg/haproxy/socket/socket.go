@@ -241,7 +241,14 @@ type Proc struct {
 	Reloads int
 	Failed  int
 	Uptime  string
-	Version string
+	Version ProcVersion
+}
+
+type ProcVersion struct {
+	Major int
+	Minor int
+	Patch int
+	Hash  string
 }
 
 // HAProxyProcs reads and converts `show proc` from the master CLI to a ProcTable
@@ -344,7 +351,7 @@ func buildProcTable(procOutput string) *ProcTable {
 				Reloads: l.asInt("<reloads>"),
 				Failed:  l.asInt("<reloads>.failed"),
 				Uptime:  l.asString("<uptime>"),
-				Version: l.asString("<version>"),
+				Version: parseVersion(l.asString("<version>")),
 			}
 			if proc.Type == "master" {
 				procTable.Master = proc
@@ -369,6 +376,20 @@ type line struct {
 
 func linereader() *line {
 	return &line{t: &tokenizer{}, hwidth: 16}
+}
+
+func parseVersion(str string) ProcVersion {
+	var version ProcVersion
+	versionStr := strings.FieldsFunc(str, func(r rune) bool { return r == '.' || r == '-' })
+	if len(versionStr) > 3 {
+		version = ProcVersion{
+			Major: atoi(versionStr[0]),
+			Minor: atoi(versionStr[1]),
+			Patch: atoi(versionStr[2]),
+			Hash:  versionStr[3],
+		}
+	}
+	return version
 }
 
 func (l *line) parseHeader(h string) {
@@ -483,18 +504,19 @@ func (t *tokenizer) readField() (string, string) {
 	return name, value
 }
 
+func atoi(s string) int {
+	i, _ := strconv.Atoi(s)
+	return i
+}
+
 func buildProcTable24(procOutput string) *ProcTable {
-	atoi := func(s string) int {
-		i, _ := strconv.Atoi(s)
-		return i
-	}
 	cut := func(s string, i, j int) string {
 		l := len(s)
 		if i >= l {
 			return ""
 		}
-		if j >= l {
-			j = l - 1
+		if j > l {
+			j = l
 		}
 		v := strings.TrimSpace(s[i:j])
 		if strings.HasPrefix(v, "[") {
@@ -511,6 +533,8 @@ func buildProcTable24(procOutput string) *ProcTable {
 				Type:    cut(line, 16, 32),
 				RPID:    atoi(cut(line, 32, 48)),
 				Reloads: atoi(cut(line, 48, 64)),
+				Uptime:  cut(line, 64, 80),
+				Version: parseVersion(cut(line, 80, 96)),
 			}
 			if proc.Type == "master" {
 				procTable.Master = proc
