@@ -268,26 +268,28 @@ func (s *Services) ReconcileIngress(ctx context.Context, changed *convtypes.Chan
 	s.updateCount++
 	s.log.Info("starting reconciliation", "id", s.updateCount)
 	timer := utils.NewTimer(s.metrics.ControllerProcTime)
-	var errmsg string
 	converter := converters.NewConverter(timer, s.instance.Config(), changed, s.converterOpt)
 	if err = converter.Sync(); err != nil {
-		errmsg = "error parsing resources"
-	}
-	if err == nil {
+		err = fmt.Errorf("error parsing resources: %w", err)
+	} else {
 		synchronized = true
 		if s.svcleader.isLeader() {
 			s.instance.AcmeUpdate()
 		}
 		if err = s.instance.HAProxyUpdate(timer); err != nil {
-			errmsg = "error trying to update haproxy"
-		} else if err = s.svcaddress.checkChanged(ctx, timer, changed); err != nil {
-			errmsg = "error trying to synchronize address status"
+			err = fmt.Errorf("error trying to update haproxy: %w", err)
+		}
+		// status follows the model even if haproxy fails to apply it, same as with --reload-interval
+		if errStatus := s.svcaddress.checkChanged(ctx, timer, changed); errStatus != nil {
+			errStatus = fmt.Errorf("error trying to synchronize address status: %w", errStatus)
+			if err == nil {
+				err = errStatus
+			} else {
+				err = fmt.Errorf("%w; %w", err, errStatus)
+			}
 		}
 	}
 	s.log.WithValues("id", s.updateCount, "success", err == nil).WithValues(timer.AsValues("total")...).Info("finish reconciliation")
-	if err != nil && errmsg != "" {
-		err = fmt.Errorf("%s: %w", errmsg, err)
-	}
 	return synchronized, err
 }
 

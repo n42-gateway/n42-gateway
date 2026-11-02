@@ -78,8 +78,12 @@ func (s *svcAddress) checkChanged(ctx context.Context, timer *utils.Timer, chang
 	if err != nil {
 		return err
 	}
-	if !reflect.DeepEqual(s.curr, lb) {
-		s.log.Info("list of load balancers changed, checking all address status", "old", s.curr, "new", lb)
+	if changed.NeedFullSync || !reflect.DeepEqual(s.curr, lb) {
+		if changed.NeedFullSync {
+			s.log.Info("full sync requested, checking all address status", "addresses", lb)
+		} else {
+			s.log.Info("list of load balancers changed, checking all address status", "old", s.curr, "new", lb)
+		}
 		if err := s.updateAllResources(lb); err != nil {
 			return fmt.Errorf("error updating resources: %w", err)
 		}
