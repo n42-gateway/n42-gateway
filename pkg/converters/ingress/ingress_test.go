@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
@@ -431,6 +432,81 @@ func TestSyncServerIDs(t *testing.T) {
   - ip: 172.17.0.99
     port: 8080
 `)
+}
+
+func TestSyncServerIDsStablePodName(t *testing.T) {
+	testCases := []struct {
+		stable bool
+		uids   []string
+		expect string
+	}{
+		// stable-podname: only the pod name is hashed, so a recreated pod (new UID) keeps its ID
+		{
+			stable: true,
+			uids:   []string{"uid-a1", "uid-a2"},
+			expect: `
+- id: default_echo_8080
+  endpoints:
+  - ip: 172.17.1.101
+    port: 8080
+    puid: 1533480673
+  - ip: 172.17.1.102
+    port: 8080
+    puid: 1516703054`,
+		},
+		{
+			stable: true,
+			uids:   []string{"uid-b1", "uid-b2"},
+			expect: `
+- id: default_echo_8080
+  endpoints:
+  - ip: 172.17.1.101
+    port: 8080
+    puid: 1533480673
+  - ip: 172.17.1.102
+    port: 8080
+    puid: 1516703054`,
+		},
+		// without stable-podname the UID is hashed, same pod names get different IDs
+		{
+			stable: false,
+			uids:   []string{"uid-a1", "uid-a2"},
+			expect: `
+- id: default_echo_8080
+  endpoints:
+  - ip: 172.17.1.101
+    port: 8080
+    puid: 395387590
+  - ip: 172.17.1.102
+    port: 8080
+    puid: 378609971`,
+		},
+	}
+	for _, test := range testCases {
+		c := setup(t)
+
+		svc, eps := c.createSvc1("default/echo", "8080", "172.17.1.101,172.17.1.102")
+		eps[0].Endpoints[0].TargetRef = &api.ObjectReference{Namespace: "default", Name: "echo-0"}
+		eps[0].Endpoints[1].TargetRef = &api.ObjectReference{Namespace: "default", Name: "echo-1"}
+
+		c.cache.PodList = make(map[string]*api.Pod)
+		c.cache.PodList["default/echo-0"] = c.createPod1("default/echo-0", "172.17.1.101", "http:8080")
+		c.cache.PodList["default/echo-1"] = c.createPod1("default/echo-1", "172.17.1.102", "http:8080")
+		c.cache.PodList["default/echo-0"].UID = k8stypes.UID(test.uids[0])
+		c.cache.PodList["default/echo-1"].UID = k8stypes.UID(test.uids[1])
+
+		svc.Annotations = map[string]string{"ingress.kubernetes.io/" + ingtypes.BackAssignBackendServerID: "true"}
+		if test.stable {
+			svc.Annotations["ingress.kubernetes.io/"+ingtypes.BackStablePodName] = "true"
+		}
+		c.Sync(
+			c.createIng1("default/echo", "echo.example.com", "/", "echo:8080"),
+		)
+
+		c.compareConfigBack(test.expect + defaultBackendConfig)
+
+		c.teardown()
+	}
 }
 
 func TestSyncRootPathLast(t *testing.T) {

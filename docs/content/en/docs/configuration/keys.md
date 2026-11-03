@@ -468,6 +468,7 @@ The table below describes all supported configuration keys.
 | [`session-cookie-value-strategy`](#affinity)         | [server-name\|pod-uid]                  | Backend  | `server-name`                    |
 | [`slots-min-free`](#dynamic-scaling)                 | minimum number of free slots            | Backend  | `0`                              |
 | [`source-address-intf`](#source-address-intf)        | `<intf1>[,<intf2>...]`                  | Backend  |                                  |
+| [`stable-podname`](#backend-server-id)               | [true\|false]                           | Backend  | `false`                          |
 | [`ssl-always-add-https`](#ssl-always-add-https)      | [true\|false]                           | Host     | `false`                          |
 | [`ssl-always-follow-redirect`](#ssl-always-add-https) | [true\|false]                          | Host     | `true`                           |
 | [`ssl-cipher-suites`](#ssl-ciphers)                  | colon-separated list                    | Host     | [see description](#ssl-ciphers)  |
@@ -985,6 +986,18 @@ Configures how to name backend servers.
 When `true`, each backend server will receive an `id` in HAProxy config based on the Kubernetes UID of the pod backing it. When using a hash-based [`balance-algorithm`](#balance-algorithm) (for example `uri` or `source`) together with consistent hashing, this will maintain the stability of assignments when pods are added or removed — that is, a given URI component or source IP will mostly keep hashing to the same server. When this setting is `false`, an addition or deletion in the server list may disturb the hash assignments of some or all of the remaining servers.
 
 If this option is enabled, adding or removing a server will cause a reload when [`dynamic-scaling`](#dynamic-scaling) is `Slots`, because ID cannot be dynamically updated. Dynamic scaling as `Add` does not have this limitation.
+
+---
+
+### Stable pod name
+
+| Configuration key | Scope     | Default | Since |
+|-------------------|-----------|---------|-------|
+| `stable-podname`  | `Backend` | `false` | `v0.17` |
+
+When `true`, the server `id` assigned by [`assign-backend-server-id`](#backend-server-id) is hashed from the pod name instead of the pod UID. A pod that is deleted and recreated gets a new UID, so its `id` changes and hash assignments move. A pod that is recreated with the same name keeps the same `id`, so assignments stay put.
+
+This is meant for workloads with stable pod names, such as a StatefulSet. Pods of a Deployment get a new random name on every rollout, so this option brings no benefit there. N42 Gateway does not check the kind of the pod owner. This option has no effect unless `assign-backend-server-id` is also `true`.
 
 ---
 
