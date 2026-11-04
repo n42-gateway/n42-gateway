@@ -1,7 +1,10 @@
+abf
 acmeexclusive
 allowcfg
+andrejbaran
 annprefix
 anrec
+apierrors
 appfail
 arodland
 Artyom
@@ -89,6 +92,7 @@ DCk
 defaultback
 defaultbackend
 defaulthost
+defaultredirto
 defbackend
 denycfg
 dercrt
@@ -314,6 +318,7 @@ modsecurity
 monkeymorgan
 Morais
 mouret
+Mudhra
 multibinder
 mworker
 myhub
@@ -389,6 +394,7 @@ readyz
 realexp
 realhdr
 reconnections
+redirdefault
 redirdest
 redirectssl
 redirfrom
@@ -528,6 +534,7 @@ usrlist
 usrnopwd
 utilruntime
 varlog
+varns
 vcookie
 vegeta
 verifyhost
@@ -541,6 +548,7 @@ workqueue
 WSL
 wslpath
 wwwpublic
+wzhiana
 xauthrequest
 xbs
 xfp

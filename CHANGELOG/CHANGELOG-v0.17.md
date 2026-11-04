@@ -3,6 +3,11 @@
 * [Major improvements](#major-improvements)
 * [Upgrade notes - read before upgrade from v0.16!](#upgrade-notes)
 * [Contributors](#contributors)
+* [v0.17.0-beta.2](#v0170-beta2)
+  * [Reference](#reference-b2)
+  * [Release notes](#release-notes-b2)
+  * [Improvements](#improvements-b2)
+  * [Fixes](#fixes-b2)
 * [v0.17.0-beta.1](#v0170-beta1)
   * [Reference](#reference-b1)
   * [Release notes](#release-notes-b1)
@@ -51,22 +56,92 @@ A refactor was made on internal HAProxy model to support multiple HTTP(S) fronte
 
 * Alexander Stephan ([alexanderstephan](https://github.com/alexanderstephan))
 * Andrej Baran ([andrejbaran](https://github.com/andrejbaran))
+* Andrew Melo ([PerilousApricot](https://github.com/PerilousApricot))
 * Arthur Le Roux ([arthlr](https://github.com/arthlr))
+* asHasnain ([asHasnain](https://github.com/asHasnain))
 * Ask Bjørn Hansen ([abh](https://github.com/abh))
 * Bagas Purwa S ([bapung](https://github.com/bapung))
 * Christian Menges ([Garfield96](https://github.com/Garfield96))
 * CodeOpsAI ([CodeOpsAI](https://github.com/CodeOpsAI))
 * hayden ([onelapahead](https://github.com/onelapahead))
+* Haydn Evans ([haydn-j-evans](https://github.com/haydn-j-evans))
 * Ian Roberts ([ianroberts](https://github.com/ianroberts))
 * Joao Morais ([jcmoraisjr](https://github.com/jcmoraisjr))
 * Josh Soref ([jsoref](https://github.com/jsoref))
 * Lola Delannoy ([spnngl](https://github.com/spnngl))
+* Marek Słabicki ([thaniri](https://github.com/thaniri))
 * Mia Mouret ([mia-mouret](https://github.com/mia-mouret))
 * Nadia Santalla ([nadiamoe](https://github.com/nadiamoe))
 * Pedro Gonçalves ([PerGon](https://github.com/PerGon))
 * Pranay Mishra ([pranaybm](https://github.com/pranaybm))
 * Silvio Knizek ([killermoehre](https://github.com/killermoehre))
 * Vladimir Kozhukalov ([kozhukalov](https://github.com/kozhukalov))
+* wzhiana ([wzhiana](https://github.com/wzhiana))
+
+# v0.17.0-beta.2
+
+## Reference (b2)
+
+* Release date: `2026-11-04`
+* Helm chart: `--version 0.17.0-beta.2 --devel`
+* Image (GHCR): `ghcr.io/n42-gateway/n42-gateway:v0.17.0-beta.2`
+* Image (Quay): `quay.io/n42-gateway/n42-gateway:v0.17.0-beta.2`
+* Embedded HAProxy version: `3.0.30`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.17.0-beta.2`
+
+## Release notes (b2)
+
+This is the second beta version of the v0.17 branch, which brings the following improvements:
+
+- Add `--reload-on-configmap-change` flag: accepts a comma-separated list of ConfigMaps in `namespace/name` format. When any listed ConfigMap changes, a full HAProxy reload is triggered. Useful when auxiliary configuration is delivered via mounted ConfigMap volumes.
+- New attributes to the Helm Chart: runtimeClassName, autoscaling.behavior, logs.lifecycle.
+
+This release also fixes the following issues:
+
+- Updated Go and N42 Gateway dependencies, which fixes known vulnerabilities including CVE-2026-111943 so that eMudhra signed certificates are no longer trusted.
+- Fixed an issue where globally configuring `var-namespace: "true"` would cause nil pointer panics when Ingresses using `haproxy-ingress.github.io/redirect-to` were introduced.
+- Failed HAProxy reloads are now retried after `--reload-retry` when `--reload-interval` is `0` (the default). Before, the retry ran but skipped the reload because the controller treated the failed configuration as already applied.
+- Fixed an issue where an Ingress without a hostname using `haproxy-ingress.github.io/redirect-to` would cause nil pointer panics.
+- Fixed the controller address in the status of Gateway and Ingress resources when the address is calculated from the controller pods. The address was being fully removed when a new pod is still pending (e.g. rolling updates) or its node was deleted and the pod wasn't removed yet. Also, a terminating pod was maintained in the address status, now it is removed just after its status reach terminating.
+- Fixes the HAProxy reload on external HAProxy mode. Before this update, the controller should stuck reloading HAProxy if the sidecar crashed or was restarted due to liveness failure. Now the controller skips the wait altogether on HAProxy 2.7 and newer, and fixes the reload count check on older versions.
+- Fixed missing address status on Ingress and Gateway resources changed during a failed reconciliation.
+- Helm Chart: fixed quote of the global ConfigMap data
+
+Dependencies:
+
+- embedded haproxy from 3.0.29 to 3.0.30
+- client-go from v0.37.1 to v0.37.2
+- go from 1.27.2 to 1.27.3
+
+## Improvements (b2)
+
+New features and improvements since `v0.17.0-beta.1`:
+
+* feat: add --reload-on-configmap-change flag to trigger HAProxy reload… [#1564](https://github.com/n42-gateway/n42-gateway/pull/1564) (asHasnain)
+  * Command-line options:
+    * [`--reload-on-configmap-change`](https://n42-gateway.github.io/v0.17/docs/configuration/command-line/#reload-on-configmap-change)
+* bump embedded haproxy from 3.0.29 to 3.0.30 [0bf6409](https://github.com/n42-gateway/n42-gateway/commit/0bf6409738dfa2484c0945c5efa1db4367e5328c) (Joao Morais)
+* bump client-go from v0.37.1 to v0.37.2 [c32c3f5](https://github.com/n42-gateway/n42-gateway/commit/c32c3f501443211baffd42ed1af6c35819b82bb0) (Joao Morais)
+* bump dependencies [1a35197](https://github.com/n42-gateway/n42-gateway/commit/1a351978182cf17acf1842c51b6b7d521cf8a320) (Joao Morais)
+
+Chart improvements since `v0.17.0-beta.1`:
+
+* Access logs lifecycle [#110](https://github.com/n42-gateway/charts/pull/110) (PerGon)
+* feat: add HPA behavior configuration support [#111](https://github.com/n42-gateway/charts/pull/111) (PerGon)
+* Add runtimeClassName [#113](https://github.com/n42-gateway/charts/pull/113) (jsoref)
+* Fix spelling [#114](https://github.com/n42-gateway/charts/pull/114) (jsoref)
+* fix: quote ConfigMap data [#116](https://github.com/n42-gateway/charts/pull/116) (wzhiana)
+* Update readme for Dual-Stack [#117](https://github.com/n42-gateway/charts/pull/117) (PerilousApricot)
+
+## Fixes (b2)
+
+* fix: panic on nil pointer dereferences when combining `var-namespace` and `redirect-to` configs [#1570](https://github.com/n42-gateway/n42-gateway/pull/1570) (thaniri)
+* fix: retry haproxy reload after failures [#1568](https://github.com/n42-gateway/n42-gateway/pull/1568) (thaniri)
+* fix: panic on nil pointer dereferences when redirects do not have a corresponding backend [#1571](https://github.com/n42-gateway/n42-gateway/pull/1571) (thaniri)
+* fix: don't wipe all node IP statuses on 1 unresolvable node or terminating controller pods [#1559](https://github.com/n42-gateway/n42-gateway/pull/1559) (haydn-j-evans)
+* fix: wait reload detection on external haproxy [#1565](https://github.com/n42-gateway/n42-gateway/pull/1565) (jcmoraisjr)
+* fix: sync all address status after a failed reconciliation [#1567](https://github.com/n42-gateway/n42-gateway/pull/1567) (thaniri)
+* update go from 1.27.2 to 1.27.3 to fix CVE-2026-111943 [#1574](https://github.com/n42-gateway/n42-gateway/pull/1574) (thaniri)
 
 # v0.17.0-beta.1
 
