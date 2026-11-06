@@ -249,6 +249,7 @@ const (
 	BackSessionCookieStrategy    = "session-cookie-strategy"
 	BackSessionCookieValue       = "session-cookie-value-strategy"
 	BackSourceAddressIntf        = "source-address-intf"
+	BackStablePodName            = "stable-podname"
 	BackSSLCipherSuitesBackend   = "ssl-cipher-suites-backend"
 	BackSSLCiphersBackend        = "ssl-ciphers-backend"
 	BackSSLFingerprintLower      = "ssl-fingerprint-lower"
