@@ -28,8 +28,8 @@ Updates made to the cluster are applied on the fly to the HAProxy instance.
 | [`v0.14`](CHANGELOG/CHANGELOG-v0.14.md)              | `2.4`                | `1.19+`                  | `2.2+`                   |
 | [`v0.13`](CHANGELOG/CHANGELOG-v0.13.md) (critical fixes) | `2.3` up to `v0.13.10`<br/>`2.4` on `v0.13.11`+   | `1.19+`   | `2.2+`     |
 
-* Beta quality versions (`beta` / `canary` tags) has some new, but battle tested features, usually running on some of our production clusters
-* Development versions (`alpha` / `snapshot` tags) has major changes with few tests, usually not recommended for production
+* Beta quality versions (`beta` / `canary` tags) have some new, but battle tested features, usually running on some of our production clusters
+* Development versions (`alpha` / `snapshot` tags) have major changes with few tests, usually not recommended for production
 * (*) Minimum supported HAProxy version if using an [external HAProxy](https://n42-gateway.github.io/docs/examples/external-haproxy/) instance
 
 **Community:**
