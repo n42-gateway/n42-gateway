@@ -1686,8 +1686,8 @@ Configure request or response headers.
 * `request-del-headers`: Defines a comma-separated list of headers that should be removed from the client request.
 * `request-set-headers`: Defines headers that should be set to the backend request. The header value is overwritten in case it already exists in the client request.
 * `response-add-headers`: Defines headers that should be added to the client response. The header is always added with the provided value, even if it already exists in the backend response.
-* `response-set-headers`: Defines a comma-separated list of headers that should be removed from the backend response.
-* `response-del-headers`: Defines headers that should be set to the client response. The header value is overwritten in case it already exists in the backend response.
+* `response-del-headers`: Defines a comma-separated list of headers that should be removed from the backend response.
+* `response-set-headers`: Defines headers that should be set to the client response. The header value is overwritten in case it already exists in the backend response.
 * `headers`: Alias to `request-set-headers`, its value is ignored if `request-set-headers` is defined.
 
 Adding and setting headers should be configured using a multi-line configuration value. The name of the header and its value should be separated with a colon and/or any amount of spaces.
