@@ -528,6 +528,20 @@ func (c *converter) syncIngressHTTP(source *annotations.Source, ing *networking.
 		// tls secret
 		for _, hostname := range tls.Hosts {
 			host := c.addHost(f, hostname, source, annFront, annHost, true)
+			if strings.HasPrefix(hostname, "*.") {
+				// a wildcard in spec.tls[].hosts[] implicitly adds HTTPS into a matching spec.rules[].host
+				for _, rule := range ing.Spec.Rules {
+					// hostname: *.domain.tld
+					// rule.Host: sub.domain.tld
+					// Cut ".domain.tld" from rule.Host, results "sub"
+					if prefix, match := strings.CutSuffix(rule.Host, hostname[1:]); match {
+						// a matching `.` means an extended match, which Ingress resource does not support - Gateway API does.
+						if !strings.Contains(prefix, ".") {
+							_ = c.addHost(f, rule.Host, source, annFront, annHost, true)
+						}
+					}
+				}
+			}
 			crt := c.addTLS(source, tls.SecretName)
 			hhttps := host.innerHTTPS
 			if hhttps.TLS.TLSHash == "" {
