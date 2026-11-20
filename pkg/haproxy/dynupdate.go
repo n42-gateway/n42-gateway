@@ -310,7 +310,7 @@ func (d *dynUpdater) dynamicallySyncSlots(pair *backendPair) bool {
 		// reusing empty slots from oldBack
 		desiredName := added[i].Name
 		added[i].Name = empty[i].Name
-		if curBack.Cookie.Preserve && added[i].CookieValue != empty[i].CookieValue {
+		if added[i].CookieValue != empty[i].CookieValue && curBack.CookieAffinity() {
 			// if cookie doesn't match here and preserving the value is
 			// important, don't even enable the endpoint before reloading.
 			// Still update the in-memory name so it's correct after reload.
@@ -404,7 +404,7 @@ func (d *dynUpdater) checkEndpointPair(backend *hatypes.Backend, pair *epPair) b
 	oldEPCopy.Port = pair.cur.Port
 	oldEPCopy.Target = pair.cur.Target
 	oldEPCopy.Weight = pair.cur.Weight
-	if !backend.Cookie.Preserve {
+	if !backend.CookieAffinity() {
 		// if preserving the cookie value is not important, we can
 		// ignore it as a criteria to enable without remove.
 		oldEPCopy.CookieValue = pair.cur.CookieValue
