@@ -44,6 +44,7 @@ import (
 	"github.com/n42-gateway/n42-gateway/pkg/haproxy"
 	hatypes "github.com/n42-gateway/n42-gateway/pkg/haproxy/types"
 	pkgtypes "github.com/n42-gateway/n42-gateway/pkg/types"
+	"github.com/n42-gateway/n42-gateway/pkg/utils"
 )
 
 // Config ...
@@ -456,13 +457,13 @@ func (c *converter) syncHTTPRoutesFilterHeaderModifier(headerModifier *gatewayv1
 	for _, hdrAdd := range headerModifier.Add {
 		*addList = append(*addList, hatypes.HTTPHeader{
 			Name:  string(hdrAdd.Name),
-			Value: hdrAdd.Value,
+			Value: utils.StringLine(hdrAdd.Value),
 		})
 	}
 	for _, hdrSet := range headerModifier.Set {
 		*setList = append(*setList, hatypes.HTTPHeader{
 			Name:  string(hdrSet.Name),
-			Value: hdrSet.Value,
+			Value: utils.StringLine(hdrSet.Value),
 		})
 	}
 	*delList = append(*delList, headerModifier.Remove...)
