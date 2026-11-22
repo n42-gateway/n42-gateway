@@ -42,7 +42,7 @@ func (c *updater) buildBackendAffinity(d *backData) {
 		c.logger.Error("unsupported affinity type on %v: %s", affinity.Source, affinity.Value)
 		return
 	}
-	name := d.mapper.Get(ingtypes.BackSessionCookieName).Value
+	name := d.mapper.Get(ingtypes.BackSessionCookieName).StringLine()
 	if name == "" {
 		name = "INGRESSCOOKIE"
 	}
@@ -60,7 +60,7 @@ func (c *updater) buildBackendAffinity(d *backData) {
 	d.backend.Cookie.Name = name
 	d.backend.Cookie.Strategy = strategyName
 	keywords := d.mapper.Get(ingtypes.BackSessionCookieKeywords)
-	keywordsValue := keywords.Value
+	keywordsValue := keywords.StringLine()
 	if strategyName == "insert" && keywordsValue == "" {
 		keywordsValue = "indirect nocache httponly"
 	}
@@ -68,7 +68,7 @@ func (c *updater) buildBackendAffinity(d *backData) {
 		// just warn, no error, for keeping backwards compatibility where "preserve" may have been used in the "keywords" section
 		c.logger.Warn("session-cookie-keywords on %s contains 'preserve'; consider using 'session-cookie-preserve' instead for better dynamic update cookie persistence", keywords.Source)
 	}
-	domain := d.mapper.Get(ingtypes.BackSessionCookieDomain).Value
+	domain := d.mapper.Get(ingtypes.BackSessionCookieDomain).StringLine()
 	d.backend.Cookie.Keywords = keywordsValue
 	d.backend.Cookie.Domain = domain
 	d.backend.Cookie.Dynamic = d.mapper.Get(ingtypes.BackSessionCookieDynamic).Bool()
@@ -133,7 +133,7 @@ func (c *updater) buildBackendAuthExternal(d *backData) {
 			continue
 		}
 
-		urlProto, urlHost, urlPort, urlPath, err := ingutils.ParseURL(url.Value)
+		urlProto, urlHost, urlPort, urlPath, err := ingutils.ParseURL(url.StringLine())
 		if err != nil {
 			c.logger.Warn("ignoring URL on %s: %v", url.Source.String(), err)
 			continue
@@ -222,21 +222,21 @@ func (c *updater) buildBackendAuthExternal(d *backData) {
 		}
 
 		s := config.Get(ingtypes.BackAuthSignin)
-		signin := s.Value
+		signin := s.StringLine()
 		if signin != "" && !validURLRegex.MatchString(signin) {
 			c.logger.Warn("ignoring invalid sign-in URL on %s: %s", s.Source.String(), signin)
 			signin = ""
 		}
 
-		annHdrRequest := config.Get(ingtypes.BackAuthHeadersRequest).Value
+		annHdrRequest := config.Get(ingtypes.BackAuthHeadersRequest).StringLine()
 		if annHdrRequest == "" {
 			annHdrRequest = "-"
 		}
-		annHdrSucceed := config.Get(ingtypes.BackAuthHeadersSucceed).Value
+		annHdrSucceed := config.Get(ingtypes.BackAuthHeadersSucceed).StringLine()
 		if annHdrSucceed == "" {
 			annHdrSucceed = "-"
 		}
-		annHdrFail := config.Get(ingtypes.BackAuthHeadersFail).Value
+		annHdrFail := config.Get(ingtypes.BackAuthHeadersFail).StringLine()
 		if annHdrFail == "" {
 			annHdrFail = "-"
 		}
@@ -275,7 +275,7 @@ func (c *updater) buildBackendAuthHTTP(d *backData) {
 		if authSecret.Value == "" {
 			continue
 		}
-		secretName := authSecret.Value
+		secretName := authSecret.StringLine()
 		if strings.Index(secretName, "/") < 0 {
 			secretName = authSecret.Source.Namespace + "/" + secretName
 		}
@@ -284,7 +284,7 @@ func (c *updater) buildBackendAuthHTTP(d *backData) {
 		if userlist == nil {
 			userb, err := c.cache.GetPasswdSecretContent(
 				authSecret.Source.Namespace,
-				authSecret.Value,
+				secretName,
 				convtypes.TrackingTarget{
 					Backend:  d.backend.BackendID(),
 					Userlist: listName,
@@ -316,7 +316,7 @@ func (c *updater) buildBackendAuthHTTP(d *backData) {
 		} else if strings.Index(authRealm.Value, `"`) >= 0 {
 			c.logger.Warn("ignoring auth-realm with quotes on %v", authRealm.Source)
 		} else if authRealm.Value != "" {
-			realm = authRealm.Value
+			realm = authRealm.StringLine()
 		}
 		path.AuthHTTP.UserlistName = userlist.Name
 		path.AuthHTTP.Realm = realm
@@ -380,7 +380,7 @@ func (c *updater) buildBackendBlueGreenBalance(d *backData) {
 		cl         convutils.WeightCluster
 	}
 	var deployWeights []*deployWeight
-	for _, weight := range strings.Split(balance.Value, ",") {
+	for _, weight := range strings.Split(balance.StringLine(), ",") {
 		dwSlice := strings.Split(weight, "=")
 		if len(dwSlice) != 3 {
 			c.logger.Error("blue/green config on %v has an invalid weight format: %s", balance.Source, weight)
@@ -471,25 +471,27 @@ var validNamePairRegex = regexp.MustCompile(`^` + validLabelRegexStr + bluegreen
 func (c *updater) buildBackendBlueGreenSelector(d *backData) {
 	cookie := d.mapper.Get(ingtypes.BackBlueGreenCookie)
 	header := d.mapper.Get(ingtypes.BackBlueGreenHeader)
-	if cookie.Value == "" && header.Value == "" {
+	cookieValue := cookie.StringLine()
+	headerValue := header.StringLine()
+	if cookieValue == "" && headerValue == "" {
 		return
 	}
-	if cookie.Value != "" && !validNamePairRegex.MatchString(cookie.Value) {
-		c.logger.Error("invalid CookieName:LabelName pair on %s: %s", cookie.Source, cookie.Value)
+	if cookieValue != "" && !validNamePairRegex.MatchString(cookieValue) {
+		c.logger.Error("invalid CookieName:LabelName pair on %s: %s", cookie.Source, cookieValue)
 		return
 	}
-	if header.Value != "" && !validNamePairRegex.MatchString(header.Value) {
-		c.logger.Error("invalid HeaderName:LabelName pair on %s: %s", header.Source, header.Value)
+	if headerValue != "" && !validNamePairRegex.MatchString(headerValue) {
+		c.logger.Error("invalid HeaderName:LabelName pair on %s: %s", header.Source, headerValue)
 		return
 	}
-	vcookie := strings.Split(cookie.Value, bluegreenSeparator)
-	vheader := strings.Split(header.Value, bluegreenSeparator)
+	vcookie := strings.Split(cookieValue, bluegreenSeparator)
+	vheader := strings.Split(headerValue, bluegreenSeparator)
 	var labelName string
-	if cookie.Value != "" {
+	if cookieValue != "" {
 		d.backend.BlueGreen.CookieName = vcookie[0]
 		labelName = vcookie[1]
 	}
-	if header.Value != "" {
+	if headerValue != "" {
 		if labelName != "" && labelName != vheader[1] {
 			c.logger.Error(
 				"CookieName:LabelName and HeaderName:LabelName pairs, used in the same backend on %s and %s, should have the same label name",
@@ -542,10 +544,10 @@ func (c *updater) buildBackendCors(d *backData) {
 			path.Cors = hatypes.Cors{
 				Enabled:          enabled,
 				AllowCredentials: config.Get(ingtypes.BackCorsAllowCredentials).Bool(),
-				AllowHeaders:     config.Get(ingtypes.BackCorsAllowHeaders).Value,
-				AllowMethods:     config.Get(ingtypes.BackCorsAllowMethods).Value,
+				AllowHeaders:     config.Get(ingtypes.BackCorsAllowHeaders).StringLine(),
+				AllowMethods:     config.Get(ingtypes.BackCorsAllowMethods).StringLine(),
 				AllowOrigin:      strings.Split(config.Get(ingtypes.BackCorsAllowOrigin).Value, ","),
-				ExposeHeaders:    config.Get(ingtypes.BackCorsExposeHeaders).Value,
+				ExposeHeaders:    config.Get(ingtypes.BackCorsExposeHeaders).StringLine(),
 				MaxAge:           config.Get(ingtypes.BackCorsMaxAge).Int(),
 			}
 		}
@@ -608,7 +610,7 @@ func firstToken(s string) string {
 }
 
 func (c *updater) buildBackendDNS(d *backData) {
-	resolverName := d.mapper.Get(ingtypes.BackUseResolver).Value
+	resolverName := d.mapper.Get(ingtypes.BackUseResolver).StringLine()
 	if resolverName == "" {
 		return
 	}
@@ -636,14 +638,14 @@ func (c *updater) buildBackendDynamic(d *backData) {
 }
 
 func (c *updater) buildBackendAgentCheck(d *backData) {
-	d.backend.AgentCheck.Addr = d.mapper.Get(ingtypes.BackAgentCheckAddr).Value
+	d.backend.AgentCheck.Addr = d.mapper.Get(ingtypes.BackAgentCheckAddr).StringLine()
 	d.backend.AgentCheck.Interval = c.validateTime(d.mapper.Get(ingtypes.BackAgentCheckInterval))
 	d.backend.AgentCheck.Port = d.mapper.Get(ingtypes.BackAgentCheckPort).Int()
-	d.backend.AgentCheck.Send = d.mapper.Get(ingtypes.BackAgentCheckSend).Value
+	d.backend.AgentCheck.Send = d.mapper.Get(ingtypes.BackAgentCheckSend).StringLine()
 }
 
 func (c *updater) buildBackendHealthCheck(d *backData) {
-	d.backend.HealthCheck.Addr = d.mapper.Get(ingtypes.BackHealthCheckAddr).Value
+	d.backend.HealthCheck.Addr = d.mapper.Get(ingtypes.BackHealthCheckAddr).StringLine()
 	d.backend.HealthCheck.FallCount = d.mapper.Get(ingtypes.BackHealthCheckFallCount).Int()
 	interval := d.mapper.Get(ingtypes.BackHealthCheckInterval)
 	if interval.Value == "" {
@@ -652,7 +654,7 @@ func (c *updater) buildBackendHealthCheck(d *backData) {
 	d.backend.HealthCheck.Interval = c.validateTime(interval)
 	d.backend.HealthCheck.Port = d.mapper.Get(ingtypes.BackHealthCheckPort).Int()
 	d.backend.HealthCheck.RiseCount = d.mapper.Get(ingtypes.BackHealthCheckRiseCount).Int()
-	d.backend.HealthCheck.URI = d.mapper.Get(ingtypes.BackHealthCheckURI).Value
+	d.backend.HealthCheck.URI = d.mapper.Get(ingtypes.BackHealthCheckURI).StringLine()
 }
 
 func (c *updater) buildBackendHeaders(d *backData) {
@@ -726,7 +728,7 @@ func (c *updater) buildBackendOAuth(d *backData) {
 		}
 		uriPrefix := "/oauth2"
 		if prefix := config.Get(ingtypes.BackOAuthURIPrefix); prefix.Source != nil {
-			uriPrefix = prefix.Value
+			uriPrefix = prefix.StringLine()
 		}
 		uriPrefix = strings.TrimRight(uriPrefix, "/")
 		namespace := oauth.Source.Namespace
@@ -736,7 +738,7 @@ func (c *updater) buildBackendOAuth(d *backData) {
 			continue
 		}
 		h := config.Get(ingtypes.BackOAuthHeaders)
-		headers := strings.Split(h.Value, ",")
+		headers := strings.Split(h.StringLine(), ",")
 		headersMap := make(map[string]string, len(headers))
 		for _, header := range headers {
 			if len(header) == 0 {
@@ -894,13 +896,14 @@ func (c *updater) buildBackendRewriteURL(d *backData) {
 		if rewrite == nil || rewrite.Value == "" {
 			continue
 		}
-		if !validURLRegex.MatchString(rewrite.Value) {
+		rewriteValue := rewrite.Value
+		if !validURLRegex.MatchString(rewriteValue) {
 			c.logger.Warn(
 				"rewrite-target does not allow white spaces or single/double quotes on %v: '%s'",
 				rewrite.Source, rewrite.Value)
 			continue
 		}
-		path.RewriteURL = rewrite.Value
+		path.RewriteURL = rewriteValue
 	}
 }
 
@@ -924,7 +927,7 @@ var listAddrs func(ifname string) []net.Addr = func(ifname string) []net.Addr {
 }
 
 func (c *updater) buildBackendSourceAddressIntf(d *backData) {
-	sources := d.mapper.Get(ingtypes.BackSourceAddressIntf).Value
+	sources := d.mapper.Get(ingtypes.BackSourceAddressIntf).StringLine()
 	if sources == "" {
 		return
 	}
@@ -961,12 +964,12 @@ func (c *updater) buildBackendSSL(d *backData) {
 	d.backend.TLS.AddCertHeader = d.mapper.Get(ingtypes.BackAuthTLSCertHeader).Bool()
 	d.backend.TLS.FingerprintLower = d.mapper.Get(ingtypes.BackSSLFingerprintLower).Bool()
 	if cfg := d.mapper.Get(ingtypes.BackSSLCiphersBackend); cfg.Source != nil {
-		d.backend.Server.Ciphers = cfg.Value
+		d.backend.Server.Ciphers = cfg.StringLine()
 	}
 	if cfg := d.mapper.Get(ingtypes.BackSSLCipherSuitesBackend); cfg.Source != nil {
-		d.backend.Server.CipherSuites = cfg.Value
+		d.backend.Server.CipherSuites = cfg.StringLine()
 	}
-	d.backend.Server.Options = d.mapper.Get(ingtypes.BackSSLOptionsBackend).Value
+	d.backend.Server.Options = d.mapper.Get(ingtypes.BackSSLOptionsBackend).StringLine()
 }
 
 func (c *updater) buildBackendSSLRedirect(d *backData) {
@@ -1013,7 +1016,7 @@ func (c *updater) buildBackendWAF(d *backData) {
 	for _, path := range d.backend.Paths {
 		config := d.mapper.GetConfig(path.Link)
 		waf := config.Get(ingtypes.BackWAF)
-		module := waf.Value
+		module := waf.StringLine()
 		if module == "" {
 			continue
 		}
@@ -1022,7 +1025,7 @@ func (c *updater) buildBackendWAF(d *backData) {
 			continue
 		}
 		wafMode := config.Get(ingtypes.BackWAFMode)
-		mode := wafMode.Value
+		mode := wafMode.StringLine()
 		if mode != "" && mode != "deny" && mode != "detect" {
 			c.logger.Warn("ignoring invalid WAF mode '%s' on %s, using 'deny' instead", mode, wafMode.Source)
 			mode = "deny"
@@ -1065,6 +1068,6 @@ func (c *updater) readAccessConfig(config configValueGetter) (allowed, denied ha
 	}
 	allowed.Rule, allowed.Exception = c.splitDualCIDR(allowcfg)
 	denied.Rule, denied.Exception = c.splitDualCIDR(denycfg)
-	allowed.SourceHeader = headercfg.Value
+	allowed.SourceHeader = headercfg.StringLine()
 	return allowed, denied
 }

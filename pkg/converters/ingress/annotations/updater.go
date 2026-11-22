@@ -181,7 +181,7 @@ func (c *updater) UpdateGlobalConfig(haproxyConfig haproxy.Config, mapper *Mappe
 
 func (c *updater) UpdateTCPPortConfig(tcp *hatypes.TCPServicePort, mapper *Mapper) {
 	tcp.CustomConfig = utils.LineToSlice(mapper.Get(ingtypes.TCPConfigTCPService).Value)
-	tcp.LogFormat = mapper.Get(ingtypes.TCPTCPServiceLogFormat).Value
+	tcp.LogFormat = mapper.Get(ingtypes.TCPTCPServiceLogFormat).StringLine()
 	tcp.ProxyProt = mapper.Get(ingtypes.TCPTCPServiceProxyProto).Bool()
 }
 
@@ -193,9 +193,9 @@ func (c *updater) UpdateHostConfig(host *hatypes.Host, mapper *Mapper) {
 		host:   host,
 		mapper: mapper,
 	}
-	host.RootRedirect = mapper.Get(ingtypes.HostAppRoot).Value
-	host.Alias.AliasName = mapper.Get(ingtypes.HostServerAlias).Value
-	host.Alias.AliasRegex = mapper.Get(ingtypes.HostServerAliasRegex).Value
+	host.RootRedirect = mapper.Get(ingtypes.HostAppRoot).StringLine()
+	host.Alias.AliasName = mapper.Get(ingtypes.HostServerAlias).StringLine()
+	host.Alias.AliasRegex = mapper.Get(ingtypes.HostServerAliasRegex).StringLine()
 	host.TLS.UseDefaultCrt = mapper.Get(ingtypes.HostSSLAlwaysAddHTTPS).Bool()
 	host.VarNamespace = mapper.Get(ingtypes.HostVarNamespace).Bool()
 	c.buildHostAuthTLS(data)
@@ -211,7 +211,7 @@ func (c *updater) UpdateBackendConfig(backend *hatypes.Backend, mapper *Mapper) 
 		mapper:  mapper,
 	}
 	// TODO check ModeTCP with HTTP annotations
-	backend.BalanceAlgorithm = mapper.Get(ingtypes.BackBalanceAlgorithm).Value
+	backend.BalanceAlgorithm = mapper.Get(ingtypes.BackBalanceAlgorithm).StringLine()
 	backend.Server.MaxConn = mapper.Get(ingtypes.BackMaxconnServer).Int()
 	backend.Server.MaxQueue = mapper.Get(ingtypes.BackMaxQueueServer).Int()
 	c.buildBackendAffinity(data)
