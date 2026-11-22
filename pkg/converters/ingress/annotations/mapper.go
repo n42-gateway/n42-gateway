@@ -24,6 +24,7 @@ import (
 	convtypes "github.com/jcmoraisjr/haproxy-ingress/pkg/converters/types"
 	hatypes "github.com/jcmoraisjr/haproxy-ingress/pkg/haproxy/types"
 	"github.com/jcmoraisjr/haproxy-ingress/pkg/types"
+	"github.com/jcmoraisjr/haproxy-ingress/pkg/utils"
 )
 
 type ConfigValueGetter interface {
@@ -235,6 +236,10 @@ func (cv *ConfigValue) NamespacedName() (namespace, name string, err error) {
 // ToLower ...
 func (cv *ConfigValue) ToLower() string {
 	return strings.ToLower(cv.Value)
+}
+
+func (cv *ConfigValue) StringLine() string {
+	return utils.StringLine(cv.Value)
 }
 
 // Bool ...
