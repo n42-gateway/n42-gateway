@@ -222,7 +222,7 @@ func (c *updater) UpdateTCPPortConfig(tcp *hatypes.TCPServicePort, mapper *Mappe
 	if config := mapper.Get(ingtypes.TCPConfigTCPService).Value; config != "" {
 		tcp.CustomConfig = utils.PatternLineToSlice(c.vars, config)
 	}
-	tcp.LogFormat = mapper.Get(ingtypes.TCPTCPServiceLogFormat).Value
+	tcp.LogFormat = mapper.Get(ingtypes.TCPTCPServiceLogFormat).StringLine()
 	tcp.ProxyProt = mapper.Get(ingtypes.TCPTCPServiceProxyProto).Bool()
 }
 
@@ -260,9 +260,9 @@ func (c *updater) UpdateHostConfig(host *hatypes.Host, mapper *Mapper) {
 		host:   host,
 		mapper: mapper,
 	}
-	host.RootRedirect = mapper.Get(ingtypes.HostAppRoot).Value
-	host.Alias.AliasName = mapper.Get(ingtypes.HostServerAlias).Value
-	host.Alias.AliasRegex = mapper.Get(ingtypes.HostServerAliasRegex).Value
+	host.RootRedirect = mapper.Get(ingtypes.HostAppRoot).StringLine()
+	host.Alias.AliasName = mapper.Get(ingtypes.HostServerAlias).StringLine()
+	host.Alias.AliasRegex = mapper.Get(ingtypes.HostServerAliasRegex).StringLine()
 	host.VarNamespace = mapper.Get(ingtypes.HostVarNamespace).Bool()
 	c.buildHostAuthExternal(d)
 	c.buildHostCertSigner(d)
@@ -281,7 +281,7 @@ func (c *updater) UpdateBackendConfig(backend *hatypes.Backend, mapper *Mapper) 
 		vars:    buildBackendVars(c.haproxy.Global(), backend, c.vars),
 	}
 	// TODO check ModeTCP with HTTP annotations
-	backend.BalanceAlgorithm = mapper.Get(ingtypes.BackBalanceAlgorithm).Value
+	backend.BalanceAlgorithm = mapper.Get(ingtypes.BackBalanceAlgorithm).StringLine()
 	backend.Server.MaxConn = mapper.Get(ingtypes.BackMaxconnServer).Int()
 	backend.Server.MaxQueue = mapper.Get(ingtypes.BackMaxQueueServer).Int()
 	c.buildBackendAffinity(data)

@@ -24,6 +24,7 @@ import (
 	convtypes "github.com/n42-gateway/n42-gateway/pkg/converters/types"
 	hatypes "github.com/n42-gateway/n42-gateway/pkg/haproxy/types"
 	"github.com/n42-gateway/n42-gateway/pkg/types"
+	"github.com/n42-gateway/n42-gateway/pkg/utils"
 )
 
 type ConfigValueGetter interface {
@@ -244,6 +245,10 @@ func (cv *ConfigValue) NamespacedName() (namespace, name string, err error) {
 // ToLower ...
 func (cv *ConfigValue) ToLower() string {
 	return strings.ToLower(cv.Value)
+}
+
+func (cv *ConfigValue) StringLine() string {
+	return utils.StringLine(cv.Value)
 }
 
 // Bool ...
