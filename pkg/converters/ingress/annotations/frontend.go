@@ -203,18 +203,18 @@ func (c *frontData) get(key string) *ConfigValue {
 
 func (c *updater) buildFrontBindHTTP(d *frontData) {
 	d.front.AcceptProxy = d.get(ingtypes.FrontUseProxyProtocol).Bool()
-	if bindHTTP := d.get(ingtypes.FrontBindHTTP).Value; bindHTTP != "" {
+	if bindHTTP := d.get(ingtypes.FrontBindHTTP).StringLine(); bindHTTP != "" {
 		d.front.Bind = bindHTTP
-	} else if ip := d.get(ingtypes.FrontBindIPAddrHTTP).Value; ip != "" {
+	} else if ip := d.get(ingtypes.FrontBindIPAddrHTTP).StringLine(); ip != "" {
 		d.front.Bind = fmt.Sprintf("%s:%d", ip, d.front.Port())
 	}
 }
 
 func (c *updater) buildFrontBindHTTPS(d *frontData) {
 	d.front.AcceptProxy = d.get(ingtypes.FrontUseProxyProtocol).Bool()
-	if bindHTTPS := d.get(ingtypes.FrontBindHTTPS).Value; bindHTTPS != "" {
+	if bindHTTPS := d.get(ingtypes.FrontBindHTTPS).StringLine(); bindHTTPS != "" {
 		d.front.Bind = bindHTTPS
-	} else if ip := d.get(ingtypes.FrontBindIPAddrHTTP).Value; ip != "" {
+	} else if ip := d.get(ingtypes.FrontBindIPAddrHTTP).StringLine(); ip != "" {
 		d.front.Bind = fmt.Sprintf("%s:%d", ip, d.front.Port())
 	}
 }
@@ -225,12 +225,12 @@ func (c *updater) buildFrontHTTPPassthrough(d *frontData) {
 	}
 
 	httpPort := d.front.Port()
-	bind := d.get(ingtypes.FrontBindHTTPPassthrough).Value
+	bind := d.get(ingtypes.FrontBindHTTPPassthrough).StringLine()
 	if bind == "" {
-		bind = d.get(ingtypes.FrontBindFrontingProxy).Value
+		bind = d.get(ingtypes.FrontBindFrontingProxy).StringLine()
 	}
 	if bind == "" {
-		ipaddr := d.get(ingtypes.FrontBindIPAddrHTTP).Value
+		ipaddr := d.get(ingtypes.FrontBindIPAddrHTTP).StringLine()
 		if ipaddr != "" {
 			bind = fmt.Sprintf("%s:%d", ipaddr, httpPort)
 		}
