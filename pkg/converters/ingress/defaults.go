@@ -50,6 +50,7 @@ func createDefaults() map[string]string {
 		types.BackAuthHeadersRequest:       "*",
 		types.BackAuthHeadersSucceed:       "*",
 		types.BackAuthMethod:               "GET",
+		types.BackBackendServerIDSource:    "pod-uid",
 		types.BackBackendServerNaming:      "sequence",
 		types.BackBackendServerRename:      "false",
 		types.BackBackendServerSlotsInc:    "1",

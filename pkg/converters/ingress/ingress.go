@@ -1037,6 +1037,18 @@ func (c *converter) syncBackendEndpointHashes(backend *hatypes.Backend) {
 		return ep1.TargetRef < ep2.TargetRef
 	})
 
+	// pod-name hashes the pod name instead of its UID, so the ID survives pod recreation
+	// when names are stable, e.g. StatefulSet pods.
+	var usePodName bool
+	idSource := mapper.Get(ingtypes.BackBackendServerIDSource)
+	switch idSource.Value {
+	case "pod-name":
+		usePodName = true
+	case "pod-uid", "":
+	default:
+		c.logger.Warn("invalid backend-server-id-source '%s' on %s, using 'pod-uid' instead", idSource.Value, idSource.Source)
+	}
+
 	usedPUIDS := map[uint32]struct{}{}
 	for _, ep := range eps {
 		if ep.TargetRef == "" {
@@ -1047,7 +1059,11 @@ func (c *converter) syncBackendEndpointHashes(backend *hatypes.Backend) {
 		pod, err := c.cache.GetPod(ep.TargetRef)
 		if err == nil {
 			hasher := fnv.New32a()
-			hasher.Write([]byte(pod.UID))
+			if usePodName {
+				hasher.Write([]byte(pod.Name))
+			} else {
+				hasher.Write([]byte(pod.UID))
+			}
 			// We get a uint32, but haproxy uses an int32 and insists on it being nonnegative,
 			// so truncate to 31 bits.
 			hash = hasher.Sum32() & 0x7fffffff

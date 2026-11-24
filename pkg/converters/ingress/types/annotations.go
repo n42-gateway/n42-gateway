@@ -158,6 +158,7 @@ const (
 	BackAuthURL                  = "auth-url"
 	BackBackendCheckInterval     = "backend-check-interval"
 	BackBackendProtocol          = "backend-protocol"
+	BackBackendServerIDSource    = "backend-server-id-source"
 	BackBackendServerNaming      = "backend-server-naming"
 	BackBackendServerRename      = "backend-server-rename"
 	BackBackendServerSlotsInc    = "backend-server-slots-increment"

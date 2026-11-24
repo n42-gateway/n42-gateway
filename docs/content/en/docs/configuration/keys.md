@@ -316,6 +316,7 @@ The table below describes all supported configuration keys.
 | [`auth-url`](#auth-external)                         | Authentication URL                      | Path     |                                  |
 | [`backend-check-interval`](#health-check)            | time with suffix                        | Backend  | `2s`                             |
 | [`backend-protocol`](#backend-protocol)              | [h1\|h2\|h1-ssl\|h2-ssl]                | Backend  | `h1`                             |
+| [`backend-server-id-source`](#backend-server-id)     | [pod-uid\|pod-name]                     | Backend  | `pod-uid`                        |
 | [`backend-server-naming`](#backend-server-naming)    | [sequence\|ip\|pod]                     | Backend  | `sequence`                       |
 | [`backend-server-rename`](#backend-server-naming)    | [true\|false]                           | Backend  | `false`                          |
 | [`backend-server-slots-increment`](#dynamic-scaling) | number of slots                         | Backend  | `1`                              |
@@ -978,13 +979,19 @@ Configures how to name backend servers.
 
 ### Backend server ID
 
-| Configuration key          | Scope     | Default | Since   |
-|----------------------------|-----------|---------|---------|
-| `assign-backend-server-id` | `Backend` | `false` | `v0.13` |
+| Configuration key          | Scope     | Default   | Since   |
+|----------------------------|-----------|-----------|---------|
+| `assign-backend-server-id` | `Backend` | `false`   | `v0.13` |
+| `backend-server-id-source` | `Backend` | `pod-uid` | `v0.17` |
 
-When `true`, each backend server will receive an `id` in HAProxy config based on the Kubernetes UID of the pod backing it. When using a hash-based [`balance-algorithm`](#balance-algorithm) (for example `uri` or `source`) together with consistent hashing, this will maintain the stability of assignments when pods are added or removed — that is, a given URI component or source IP will mostly keep hashing to the same server. When this setting is `false`, an addition or deletion in the server list may disturb the hash assignments of some or all of the remaining servers.
+When `assign-backend-server-id` is `true`, each backend server will receive an `id` in HAProxy config based on the pod backing it. When using a hash-based [`balance-algorithm`](#balance-algorithm) (for example `uri` or `source`) together with consistent hashing, this will maintain the stability of assignments when pods are added or removed — that is, a given URI component or source IP will mostly keep hashing to the same server. When `assign-backend-server-id` is `false`, an addition or deletion in the server list may disturb the hash assignments of some or all of the remaining servers.
 
-If this option is enabled, adding or removing a server will cause a reload when [`dynamic-scaling`](#dynamic-scaling) is `Slots`, because ID cannot be dynamically updated. Dynamic scaling as `Add` does not have this limitation.
+If `assign-backend-server-id` is enabled, adding or removing a server will cause a reload when [`dynamic-scaling`](#dynamic-scaling) is `Slots`, because ID cannot be dynamically updated. Dynamic scaling as `Add` does not have this limitation.
+
+`backend-server-id-source` defines which pod attribute is hashed to create the `id`. It has no effect unless `assign-backend-server-id` is `true`.
+
+* `pod-uid`: Uses the Kubernetes UID of the pod. This is the default value. A pod that is deleted and recreated gets a new UID, so its `id` changes and some hash assignments move.
+* `pod-name`: Uses the name of the pod. A pod that is recreated with the same name keeps its `id`, so assignments stay put. This is meant for workloads with stable pod names, such as a StatefulSet. Pods of a Deployment get a new random name on every rollout, so this option brings no benefit there. N42 Gateway does not check the kind of the pod owner.
 
 ---
 
