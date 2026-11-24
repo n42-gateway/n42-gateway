@@ -434,15 +434,16 @@ func TestSyncServerIDs(t *testing.T) {
 `)
 }
 
-func TestSyncServerIDsStablePodName(t *testing.T) {
+func TestSyncServerIDsSource(t *testing.T) {
 	testCases := []struct {
-		stable bool
-		uids   []string
-		expect string
+		source  string
+		uids    []string
+		expect  string
+		logging string
 	}{
-		// stable-podname: only the pod name is hashed, so a recreated pod (new UID) keeps its ID
+		// pod-name: only the pod name is hashed, so a recreated pod (new UID) keeps its ID
 		{
-			stable: true,
+			source: "pod-name",
 			uids:   []string{"uid-a1", "uid-a2"},
 			expect: `
 - id: default_echo_8080
@@ -455,7 +456,7 @@ func TestSyncServerIDsStablePodName(t *testing.T) {
     puid: 1516703054`,
 		},
 		{
-			stable: true,
+			source: "pod-name",
 			uids:   []string{"uid-b1", "uid-b2"},
 			expect: `
 - id: default_echo_8080
@@ -467,9 +468,9 @@ func TestSyncServerIDsStablePodName(t *testing.T) {
     port: 8080
     puid: 1516703054`,
 		},
-		// without stable-podname the UID is hashed, same pod names get different IDs
+		// the UID is hashed by default, same pod names get different IDs
 		{
-			stable: false,
+			source: "",
 			uids:   []string{"uid-a1", "uid-a2"},
 			expect: `
 - id: default_echo_8080
@@ -480,6 +481,34 @@ func TestSyncServerIDsStablePodName(t *testing.T) {
   - ip: 172.17.1.102
     port: 8080
     puid: 378609971`,
+		},
+		{
+			source: "pod-uid",
+			uids:   []string{"uid-a1", "uid-a2"},
+			expect: `
+- id: default_echo_8080
+  endpoints:
+  - ip: 172.17.1.101
+    port: 8080
+    puid: 395387590
+  - ip: 172.17.1.102
+    port: 8080
+    puid: 378609971`,
+		},
+		// an invalid source falls back to the UID
+		{
+			source: "invalid",
+			uids:   []string{"uid-a1", "uid-a2"},
+			expect: `
+- id: default_echo_8080
+  endpoints:
+  - ip: 172.17.1.101
+    port: 8080
+    puid: 395387590
+  - ip: 172.17.1.102
+    port: 8080
+    puid: 378609971`,
+			logging: `WARN invalid backend-server-id-source 'invalid' on Service 'default/echo', using 'pod-uid' instead`,
 		},
 	}
 	for _, test := range testCases {
@@ -496,14 +525,15 @@ func TestSyncServerIDsStablePodName(t *testing.T) {
 		c.cache.PodList["default/echo-1"].UID = k8stypes.UID(test.uids[1])
 
 		svc.Annotations = map[string]string{"ingress.kubernetes.io/" + ingtypes.BackAssignBackendServerID: "true"}
-		if test.stable {
-			svc.Annotations["ingress.kubernetes.io/"+ingtypes.BackStablePodName] = "true"
+		if test.source != "" {
+			svc.Annotations["ingress.kubernetes.io/"+ingtypes.BackBackendServerIDSource] = test.source
 		}
 		c.Sync(
 			c.createIng1("default/echo", "echo.example.com", "/", "echo:8080"),
 		)
 
 		c.compareConfigBack(test.expect + defaultBackendConfig)
+		c.logger.CompareLogging(test.logging)
 
 		c.teardown()
 	}

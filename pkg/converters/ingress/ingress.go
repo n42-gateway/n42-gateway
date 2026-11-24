@@ -1037,9 +1037,17 @@ func (c *converter) syncBackendEndpointHashes(backend *hatypes.Backend) {
 		return ep1.TargetRef < ep2.TargetRef
 	})
 
-	// stable-podname hashes the pod name instead of its UID, so the ID survives pod recreation
+	// pod-name hashes the pod name instead of its UID, so the ID survives pod recreation
 	// when names are stable, e.g. StatefulSet pods.
-	stablePodName := mapper.Get(ingtypes.BackStablePodName).Bool()
+	var usePodName bool
+	idSource := mapper.Get(ingtypes.BackBackendServerIDSource)
+	switch idSource.Value {
+	case "pod-name":
+		usePodName = true
+	case "pod-uid", "":
+	default:
+		c.logger.Warn("invalid backend-server-id-source '%s' on %s, using 'pod-uid' instead", idSource.Value, idSource.Source)
+	}
 
 	usedPUIDS := map[uint32]struct{}{}
 	for _, ep := range eps {
@@ -1051,7 +1059,7 @@ func (c *converter) syncBackendEndpointHashes(backend *hatypes.Backend) {
 		pod, err := c.cache.GetPod(ep.TargetRef)
 		if err == nil {
 			hasher := fnv.New32a()
-			if stablePodName {
+			if usePodName {
 				hasher.Write([]byte(pod.Name))
 			} else {
 				hasher.Write([]byte(pod.UID))
