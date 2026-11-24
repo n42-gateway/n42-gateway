@@ -65,7 +65,9 @@ func (b *Backend) AddEmptyEndpoint(ipMode IPMode) *Endpoint {
 	// update enables these endpoints without a reload, they will use cookie
 	// affinity (if it's enabled). This happens when session-cookie-preserve
 	// is false.
-	endpoint.CookieValue = endpoint.Name
+	if b.CookieAffinity() {
+		endpoint.CookieValue = endpoint.Name
+	}
 	return endpoint
 }
 

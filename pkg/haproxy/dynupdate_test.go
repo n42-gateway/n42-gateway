@@ -869,7 +869,7 @@ INFO-V(2) updated endpoint '172.17.0.4:8080' weight '1' on backend/server 'defau
 			logging: `INFO-V(2) need to reload due to config changes: [backends]`,
 		},
 		// test that we're able to update when a cookie value of acquired
-		// existing endpoint doesn't match and "preserve" cookie mode is not enabled
+		// existing endpoint doesn't match and "Dynamic" cookie mode is enabled
 		// (eg. it doesn't care to preserve the cookie value, so still updates)
 		"test26": {
 			doconfig1: func(c *testConfig) {
@@ -881,7 +881,7 @@ INFO-V(2) updated endpoint '172.17.0.4:8080' weight '1' on backend/server 'defau
 				b2.Cookie.Name = "serverId"
 				b2.Cookie.Strategy = "insert"
 				b2.Cookie.Keywords = "nocache"
-				b2.Cookie.Dynamic = false
+				b2.Cookie.Dynamic = true
 				b2.Cookie.Preserve = false
 				b2.ModeTCP = false
 				b2.AcquireEndpoint("172.17.0.2", 8080, "").CookieValue = "5017b276-6886-4ae0-b75e-bd1fcb9b1e3b"
@@ -898,7 +898,7 @@ INFO-V(2) updated endpoint '172.17.0.4:8080' weight '1' on backend/server 'defau
 				b2.Cookie.Name = "serverId"
 				b2.Cookie.Strategy = "insert"
 				b2.Cookie.Keywords = "nocache"
-				b2.Cookie.Dynamic = false
+				b2.Cookie.Dynamic = true
 				b2.Cookie.Preserve = false
 				b2.ModeTCP = false
 				b2.AcquireEndpoint("172.17.0.2", 8080, "").CookieValue = "5017b276-6886-4ae0-b75e-bd1fcb9b1e3b"
