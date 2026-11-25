@@ -4,6 +4,10 @@
 * [Upgrade notes - read before upgrade from v0.15!](#upgrade-notes)
   * [Deprecated command-line options](#deprecated-command-line-options)
 * [Contributors](#contributors)
+* [v0.16.4](#v0164)
+  * [Reference](#reference-r4)
+  * [Release notes](#release-notes-r4)
+  * [Fixes and Improvements](#fixes-and-improvements-r4)
 * [v0.16.3](#v0163)
   * [Reference](#reference-r3)
   * [Release notes](#release-notes-r3)
@@ -71,6 +75,49 @@ The `--enable-endpointslices-api` command-line option was deprecated on v0.16 an
 * Pedro Gonçalves ([PerGon](https://github.com/PerGon))
 * Till! ([till](https://github.com/till))
 * Vladimir Kozhukalov ([kozhukalov](https://github.com/kozhukalov))
+
+# v0.16.4
+
+## Reference (r4)
+
+* Changelog and release notes: [v0.16.4](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.16.md#v0164)
+* Release date: `2026-11-25`
+* Helm chart: `--version 0.16.4`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.16.4`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.16.4`
+* Embedded HAProxy version: `2.8.32`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.16.4`
+
+## Release notes (r4)
+
+This release fixes known vulnerabilities found on v0.15 branch:
+
+- Hadi Assalem reported the ability of an authenticated user with Ingress write permission on any namespace to execute arbitrary code in the HAProxy container. This is a critical vulnerability, roughly CVSS 9. A CVE will be issued shortly through GitHub Security Advisory.
+- Update embedded HAProxy, this fixes known vulnerabilities including DDoS from an unauthenticated user on h2 connections.
+- Update base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+
+Other improvements:
+
+- Pranay reported and fixed the premature shutdown of the session controller uses to drop frontend sessions in the `close-sessions-duration` functionality, leading to the remaining sessions to be dropped only when the old HAProxy instance is stopped; now the controller session is preserved.
+- Ensures that a hostname matching a wildcard certificate responds on HTTPS requests. This impacts hostnames matching wildcard certificates but responding HTTP only; after the update, requests to these hostnames might respond with a redirect depending on the ssl-redirect configuration.
+
+Last but not least: the HAProxy container does not mount the controller's service account when External HAProxy is used. Prefer to configure HAProxy as a sidecar container for security reasons. See [External HAProxy documentation](https://n42-gateway.github.io/examples/external-haproxy/).
+
+Dependencies:
+
+- embedded haproxy from 2.8.31 to 2.8.32
+- go from 1.26.10 to 1.26.11
+
+## Fixes and improvements (r4)
+
+New fixes and improvements since `v0.16.3`:
+
+* fix(security): bump embedded haproxy from 2.8.31 to 2.8.32 [#1583](https://github.com/n42-gateway/n42-gateway/pull/1583) (fabriceclementz)
+* bump dependencies [f07b0b0](https://github.com/n42-gateway/n42-gateway/commit/f07b0b0525cb43b96f798ca5a1883b18f20a53b2) (Joao Morais)
+* bump go from 1.26.10 to 1.26.11 [0537cc2](https://github.com/n42-gateway/n42-gateway/commit/0537cc22134c09e67c07e9313917adece8e2b685) (Joao Morais)
+* fix: trim trailing lines from single line configs [#1591](https://github.com/n42-gateway/n42-gateway/pull/1591) (jcmoraisjr)
+* fix: do not shutdown the controller's own connection when shedding sessions [#1563](https://github.com/n42-gateway/n42-gateway/pull/1563) (jcmoraisjr)
+* fix: configure https on hosts matching wildcard [#1597](https://github.com/n42-gateway/n42-gateway/pull/1597) (jcmoraisjr)
 
 # v0.16.3
 
