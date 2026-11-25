@@ -3,6 +3,10 @@
 * [Major improvements](#major-improvements)
 * [Upgrade notes - read before upgrade from v0.16!](#upgrade-notes)
 * [Contributors](#contributors)
+* [v0.17.0-beta.3](#v0170-beta3)
+  * [Reference](#reference-b3)
+  * [Release notes](#release-notes-b3)
+  * [Fixes and Improvements](#fixes-and-improvements-b3)
 * [v0.17.0-beta.2](#v0170-beta2)
   * [Reference](#reference-b2)
   * [Release notes](#release-notes-b2)
@@ -63,6 +67,7 @@ A refactor was made on internal HAProxy model to support multiple HTTP(S) fronte
 * Bagas Purwa S ([bapung](https://github.com/bapung))
 * Christian Menges ([Garfield96](https://github.com/Garfield96))
 * CodeOpsAI ([CodeOpsAI](https://github.com/CodeOpsAI))
+* Fabrice Clementz ([fabriceclementz](https://github.com/fabriceclementz))
 * hayden ([onelapahead](https://github.com/onelapahead))
 * Haydn Evans ([haydn-j-evans](https://github.com/haydn-j-evans))
 * Ian Roberts ([ianroberts](https://github.com/ianroberts))
@@ -77,6 +82,49 @@ A refactor was made on internal HAProxy model to support multiple HTTP(S) fronte
 * Silvio Knizek ([killermoehre](https://github.com/killermoehre))
 * Vladimir Kozhukalov ([kozhukalov](https://github.com/kozhukalov))
 * wzhiana ([wzhiana](https://github.com/wzhiana))
+
+# v0.17.0-beta.3
+
+## Reference (b3)
+
+* Changelog and release notes: [v0.17.0-beta.3](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.17.md#v0170-beta3)
+* Release date: `2026-11-25`
+* Helm chart: `--version 0.17.0-beta.3 --devel`
+* Image (GHCR): `ghcr.io/n42-gateway/n42-gateway:v0.17.0-beta.3`
+* Image (Quay): `quay.io/n42-gateway/n42-gateway:v0.17.0-beta.3`
+* Embedded HAProxy version: `3.0.31`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.17.0-beta.3`
+
+## Release notes (b3)
+
+This is the third and last beta version of the v0.17 branch, which fixes known vulnerabilities:
+
+- Hadi Assalem reported the ability of an authenticated user with Ingress write permission on any namespace to execute arbitrary code in the HAProxy container. This is a critical vulnerability, roughly CVSS 9. A CVE will be issued shortly through GitHub Security Advisory.
+- Update embedded HAProxy, this fixes known vulnerabilities including DDoS from an unauthenticated user on h2 connections.
+- Update base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+
+Other improvements:
+
+- Fix the missing of a reload in case a non dynamic cookie value changes. This should lead to unexpected reloads when dynamic update is enabled. Revise the cookie settings if this happens, like enabling `session-cookie-dynamic` or using `session-cookie-value-strategy` as the server name.
+- Ensures that a hostname matching a wildcard certificate responds on HTTPS requests. This impacts hostnames matching wildcard certificates but responding HTTP only; after the update, requests to these hostnames might respond with a redirect depending on the ssl-redirect configuration.
+
+Last but not least: the HAProxy container does not mount the controller's service account when External HAProxy is used. Prefer to configure HAProxy as a sidecar container for security reasons. See [External HAProxy documentation](https://n42-gateway.github.io/examples/external-haproxy/).
+
+Dependencies:
+
+- embedded haproxy from 3.0.30 to 3.0.31
+- go from 1.27.3 to 1.27.4
+
+## Fixes and improvements (b3)
+
+New fixes and improvements since `v0.17.0-beta.2`:
+
+* fix(security): bump embedded haproxy from 3.0.30 to 3.0.31 [#1584](https://github.com/n42-gateway/n42-gateway/pull/1584) (fabriceclementz)
+* bump dependencies [13f7512](https://github.com/n42-gateway/n42-gateway/commit/13f7512f4dc4ce22aa4320bdd308921fad0c72ee) (Joao Morais)
+* bump go from 1.27.3 to 1.27.4 [36abdc7](https://github.com/n42-gateway/n42-gateway/commit/36abdc7f831b2ff2d775a2c886f6446fb2f0e05f) (Joao Morais)
+* fix: trim trailing lines from single line configs [#1590](https://github.com/n42-gateway/n42-gateway/pull/1590) (jcmoraisjr)
+* fix: reload if need to preserve cookie value [#1595](https://github.com/n42-gateway/n42-gateway/pull/1595) (jcmoraisjr)
+* fix: configure https on hosts matching wildcard [#1596](https://github.com/n42-gateway/n42-gateway/pull/1596) (jcmoraisjr)
 
 # v0.17.0-beta.2
 
