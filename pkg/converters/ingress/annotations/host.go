@@ -33,7 +33,7 @@ func (c *updater) buildHostAuthTLS(d *hostData) {
 	tls := &d.host.TLS
 	if cafile, crlfile, err := c.cache.GetCASecretPath(
 		tlsSecret.Source.Namespace,
-		tlsSecret.Value,
+		tlsSecret.StringLine(),
 		convtypes.TrackingTarget{Hostname: d.host.Hostname},
 	); err == nil {
 		tls.CAFilename = cafile.Filename
@@ -51,7 +51,7 @@ func (c *updater) buildHostAuthTLS(d *hostData) {
 		tls.CAHash = c.fakeCA.SHA1Hash
 	}
 	tls.CAVerifyOptional = verify.Value == "optional" || verify.Value == "optional_no_ca"
-	tls.CAErrorPage = d.mapper.Get(ingtypes.HostAuthTLSErrorPage).Value
+	tls.CAErrorPage = d.mapper.Get(ingtypes.HostAuthTLSErrorPage).StringLine()
 }
 
 func (c *updater) buildHostCertSigner(d *hostData) {
@@ -74,18 +74,18 @@ func (c *updater) buildHostCertSigner(d *hostData) {
 func (c *updater) buildHostRedirect(d *hostData) {
 	// TODO need a host<->host tracking if a target is found
 	redir := d.mapper.Get(ingtypes.HostRedirectFrom)
-	if target := c.haproxy.Hosts().FindTargetRedirect(redir.Value, false); target != nil {
+	if target := c.haproxy.Hosts().FindTargetRedirect(redir.StringLine(), false); target != nil {
 		c.logger.Warn("ignoring redirect from '%s' on %v, it's already targeting to '%s'",
 			redir.Value, redir.Source, target.Hostname)
 	} else if len(d.host.Paths) > 0 {
-		d.host.Redirect.RedirectHost = redir.Value
+		d.host.Redirect.RedirectHost = redir.StringLine()
 	}
 	redirRegex := d.mapper.Get(ingtypes.HostRedirectFromRegex)
-	if target := c.haproxy.Hosts().FindTargetRedirect(redirRegex.Value, true); target != nil {
+	if target := c.haproxy.Hosts().FindTargetRedirect(redirRegex.StringLine(), true); target != nil {
 		c.logger.Warn("ignoring regex redirect from '%s' on %v, it's already targeting to '%s'",
 			redirRegex.Value, redirRegex.Source, target.Hostname)
 	} else if len(d.host.Paths) > 0 {
-		d.host.Redirect.RedirectHostRegex = redirRegex.Value
+		d.host.Redirect.RedirectHostRegex = redirRegex.StringLine()
 	}
 }
 
@@ -114,13 +114,13 @@ func (c *updater) buildHostSSLPassthrough(d *hostData) {
 
 func (c *updater) buildHostTLSConfig(d *hostData) {
 	if cfg := d.mapper.Get(ingtypes.HostSSLCiphers); cfg.Source != nil {
-		d.host.TLS.Ciphers = cfg.Value
+		d.host.TLS.Ciphers = cfg.StringLine()
 	}
 	if cfg := d.mapper.Get(ingtypes.HostSSLCipherSuites); cfg.Source != nil {
-		d.host.TLS.CipherSuites = cfg.Value
+		d.host.TLS.CipherSuites = cfg.StringLine()
 	}
 	if cfg := d.mapper.Get(ingtypes.HostTLSALPN); cfg.Source != nil {
-		d.host.TLS.ALPN = cfg.Value
+		d.host.TLS.ALPN = cfg.StringLine()
 	}
-	d.host.TLS.Options = d.mapper.Get(ingtypes.HostSSLOptionsHost).Value
+	d.host.TLS.Options = d.mapper.Get(ingtypes.HostSSLOptionsHost).StringLine()
 }

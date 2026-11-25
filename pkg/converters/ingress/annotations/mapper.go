@@ -23,6 +23,7 @@ import (
 
 	hatypes "github.com/jcmoraisjr/haproxy-ingress/pkg/haproxy/types"
 	"github.com/jcmoraisjr/haproxy-ingress/pkg/types"
+	"github.com/jcmoraisjr/haproxy-ingress/pkg/utils"
 )
 
 // MapBuilder ...
@@ -225,6 +226,10 @@ func (cv *ConfigValue) NamespacedName() (namespace, name string, err error) {
 		return s.Namespace, value[0], nil
 	}
 	return "", "", fmt.Errorf("a globally configured resource name is missing the namespace: %s", cv.Value)
+}
+
+func (cv *ConfigValue) StringLine() string {
+	return utils.StringLine(cv.Value)
 }
 
 // Bool ...
