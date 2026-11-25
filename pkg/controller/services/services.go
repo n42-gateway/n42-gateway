@@ -163,6 +163,7 @@ func (s *Services) setup(ctx context.Context) error {
 		LocalFSPrefix:    cfg.LocalFSPrefix,
 		IPMode:           ipMode,
 		IsExternal:       instanceOptions.IsExternal,
+		NodeName:         cfg.ControllerNodeName,
 		MasterSocket:     instanceOptions.MasterSocket,
 		AdminSocket:      instanceOptions.AdminSocket,
 		AcmeSocket:       instanceOptions.AcmeSocket,

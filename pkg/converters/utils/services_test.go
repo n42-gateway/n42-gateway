@@ -116,6 +116,24 @@ func TestCreateEndpoints(t *testing.T) {
 	}
 }
 
+func TestCreateEndpointsNodeName(t *testing.T) {
+	svc, eps := helper_test.CreateService("default/echo", "svcport:8080:http", "172.17.0.11,172.17.0.12")
+	node1 := "node1"
+	eps[0].Endpoints[0].NodeName = &node1
+	cache := &helper_test.CacheMock{
+		SvcList: []*api.Service{svc},
+		EpsList: map[string][]*discoveryv1.EndpointSlice{"default/echo": eps},
+	}
+	endpoints, _, _ := CreateEndpoints(cache, svc, FindServicePort(svc, "8080"))
+	expected := []*Endpoint{
+		{IP: "172.17.0.11", Port: 8080, Target: "172.17.0.11:8080", NodeName: "node1"},
+		{IP: "172.17.0.12", Port: 8080, Target: "172.17.0.12:8080"},
+	}
+	if !reflect.DeepEqual(endpoints, expected) {
+		t.Errorf("endpoints differ: expected=%+v actual=%+v", expected, endpoints)
+	}
+}
+
 type config struct {
 	t *testing.T
 }

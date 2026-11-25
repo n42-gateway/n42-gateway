@@ -434,6 +434,7 @@ The table below describes all supported configuration keys.
 | [`peers-port`](#peers)                               | port number                             | Global   |                                  |
 | [`peers-table`](#peers)                              | stick-table declaration                 | Backend  |                                  |
 | [`peers-table-global`](#peers)                       | stick-table declaration                 | Global   |                                  |
+| [`prefer-same-node`](#prefer-same-node)              | [true\|false]                           | Backend  | `false`                          |
 | [`prometheus-port`](#bind-port)                      | port number                             | Global   |                                  |
 | [`proxy-body-size`](#proxy-body-size)                | size (bytes)                            | Path     | unlimited                        |
 | [`proxy-protocol`](#proxy-protocol)                  | [v1\|v2\|v2-ssl\|v2-ssl-cn]             | Backend  |                                  |
@@ -2399,6 +2400,42 @@ See also:
 * https://docs.haproxy.org/3.0/configuration.html#4-stick-table
 * https://docs.haproxy.org/3.0/configuration.html#4-track-sc0
 * https://www.haproxy.com/blog/introduction-to-haproxy-stick-tables
+
+---
+
+### Prefer same node
+
+| Configuration key  | Scope     | Default | Since |
+|--------------------|-----------|---------|-------|
+| `prefer-same-node` | `Backend` | `false` | v0.18 |
+
+Configures if the endpoints running in the same node of the controller should be
+preferred over the endpoints running in other nodes. This is useful when the controller
+runs as a DaemonSet and the backend has replicas spread over the same nodes: most of the
+requests are served without leaving the node, and all the other endpoints are preserved
+in the backend, along with their health checks, ready to receive the requests whenever
+the local ones are not available.
+
+The preference is implemented by changing the weight of the servers: the local endpoints
+are raised up to `256`, which is the maximum weight in HAProxy, and all the other
+endpoints are configured with weight `1`. This means that a small amount of the requests
+is still sent to the other nodes, about `1.5%` in a backend with one local and four
+remote endpoints. Weight is used instead of the `backup` server option because it can be
+dynamically updated, so changes in the endpoints continue to not need a reload.
+
+Some remarks about this configuration:
+
+* The node name of the controller is read from its own pod, so the `POD_NAME` and `POD_NAMESPACE` environment variables should be configured. The key is ignored if the node name cannot be found, eg when the controller is running out of the cluster.
+* A backend without ready endpoints in the same node of the controller is not changed.
+* Endpoints with weight `0`, eg draining or out of a [blue/green](#blue-green) balance, are not changed.
+* The proportion between the local endpoints, eg from a [blue/green](#blue-green) balance or the weight of Gateway API backend references, is preserved. The proportion between the endpoints of the other nodes is not.
+* Health checks are the only way to move the requests out of a failing local endpoint before Kubernetes removes it from the service. Consider configuring [`health-check-uri`](#health-check) if the default TCP based health check is not enough to identify a failure.
+* Should not be used with [`agent-check`](#agent-check) changing the weight of the servers.
+
+See also:
+
+* [`initial-weight`](#initial-weight) configuration key
+* [`health-check-uri`](#health-check) configuration key
 
 ---
 

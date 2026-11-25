@@ -1109,11 +1109,13 @@ func (c *converter) addEndpoints(svc *api.Service, svcPort *api.ServicePort, bac
 		return err
 	}
 	for _, addr := range ready {
-		backend.AcquireEndpoint(addr.IP, addr.Port, addr.TargetRef)
+		ep := backend.AcquireEndpoint(addr.IP, addr.Port, addr.TargetRef)
+		ep.NodeName = addr.NodeName
 	}
 	if c.haproxy.Global().DrainSupport.Drain {
 		for _, addr := range notReady {
 			ep := backend.AcquireEndpoint(addr.IP, addr.Port, addr.TargetRef)
+			ep.NodeName = addr.NodeName
 			ep.Weight = 0
 		}
 		pods, err := c.cache.GetTerminatingPods(svc,
@@ -1125,6 +1127,7 @@ func (c *converter) addEndpoints(svc *api.Service, svcPort *api.ServicePort, bac
 			targetPort := convutils.FindContainerPort(pod, svcPort)
 			if targetPort > 0 {
 				ep := backend.AcquireEndpoint(pod.Status.PodIP, targetPort, pod.Namespace+"/"+pod.Name)
+				ep.NodeName = pod.Spec.NodeName
 				ep.Weight = 0
 			} else {
 				c.logger.Warn("skipping endpoint %s of service %s/%s: port '%s' was not found",
