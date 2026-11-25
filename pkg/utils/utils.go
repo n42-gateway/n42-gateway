@@ -48,6 +48,16 @@ func LineToSlice(s string) []string {
 	return strings.Split(strings.TrimRight(s, "\n"), "\n")
 }
 
+// StringLine returns the first line of a multi-line string. Search on both
+// CR and LF individually. Leading and trailing spaces or tabs from the
+// resulting string are removed.
+func StringLine(s string) string {
+	if i := strings.IndexFunc(s, func(r rune) bool { return r == '\n' || r == '\r' }); i >= 0 {
+		return strings.TrimSpace(s[:i])
+	}
+	return strings.TrimSpace(s)
+}
+
 // SplitHeaderNameValue splits a header line declaration into header name and value.
 // Note that name and value might be empty for an empty input.
 func SplitHeaderNameValue(header string) (name, value string, err error) {
