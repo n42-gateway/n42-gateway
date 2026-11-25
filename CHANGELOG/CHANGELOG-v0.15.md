@@ -6,6 +6,10 @@
   * [Upgrading with embedded Acme](#upgrading-with-embedded-acme)
   * [Upgrading with custom repositories](#upgrading-with-custom-repositories)
 * [Contributors](#contributors)
+* [v0.15.7](#v0157)
+  * [Reference](#reference-r7)
+  * [Release notes](#release-notes-r7)
+  * [Fixes and improvements](#fixes-and-improvements-r7)
 * [v0.15.6](#v0156)
   * [Reference](#reference-r6)
   * [Release notes](#release-notes-r6)
@@ -160,6 +164,42 @@ See the full syntax and default values in the [README.md](https://github.com/hap
 * RT ([hedgieinsocks](https://github.com/hedgieinsocks))
 * tomklapka ([tomklapka](https://github.com/tomklapka))
 * Tomasz Zurkowski ([doriath](https://github.com/doriath))
+
+# v0.15.7
+
+## Reference (r7)
+
+* Changelog and release notes: [v0.15.7](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.15.md#v0157)
+* Release date: `2026-11-25`
+* Helm chart: `--version 0.15.7`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.15.7`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.15.7`
+* Embedded HAProxy version: `2.6.36`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.15.7`
+
+## Release notes (r7)
+
+This release fixes known vulnerabilities found on v0.15 branch:
+
+- Hadi Assalem reported the ability of an authenticated user with Ingress write permission on any namespace to execute arbitrary code in the HAProxy container. This is a critical vulnerability, roughly CVSS 9. A CVE will be issued shortly through GitHub Security Advisory.
+- Update embedded HAProxy, this fixes known vulnerabilities including DDoS from an unauthenticated user on h2 connections.
+- Update base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+
+Last but not least: the HAProxy container does not mount the controller's service account when External HAProxy is used. Prefer to configure HAProxy as a sidecar container for security reasons. See [External HAProxy documentation](https://n42-gateway.github.io/examples/external-haproxy/).
+
+Dependencies:
+
+- embedded haproxy from 2.6.35 to 2.6.36
+- go from 1.26.10 to 1.26.11
+
+## Fixes and improvements (r7)
+
+New fixes and improvements since `v0.15.6`:
+
+* fix(security): bump embedded haproxy from 2.6.35 to 2.6.36 [#1582](https://github.com/n42-gateway/n42-gateway/pull/1582) (fabriceclementz)
+* bump dependencies [05fca03](https://github.com/n42-gateway/n42-gateway/commit/05fca036839a6aeed844944e72e5dc6ac7602240) (Joao Morais)
+* bump go from 1.26.10 to 1.26.11 [2d00ecd](https://github.com/n42-gateway/n42-gateway/commit/2d00ecdfb45478919da8ba79fb9d92943161cbe7) (Joao Morais)
+* fix: trim trailing lines from single line configs [#1592](https://github.com/n42-gateway/n42-gateway/pull/1592) (jcmoraisjr)
 
 # v0.15.6
 
