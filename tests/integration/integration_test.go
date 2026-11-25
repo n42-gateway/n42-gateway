@@ -500,6 +500,44 @@ func TestIntegrationIngress(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("should serve subdomains of wildcard TLS certificate", func(t *testing.T) {
+		t.Parallel()
+
+		baseHostname := framework.RandomHostName()
+		subHostname := "sub." + baseHostname
+		wildcardHostname := "*." + baseHostname
+
+		ca, cakey := framework.CreateCA(t, "custom CA")
+		crt, key := framework.CreateCertificate(t, ca, cakey, subHostname,
+			options.DNS(wildcardHostname, baseHostname),
+		)
+		secret := f.CreateSecretTLS(ctx, t, crt, key)
+
+		svc := f.CreateService(ctx, t, httpServerPort)
+		_, _ = f.CreateIngress(ctx, t, svc,
+			options.AddConfigKeyAnnotation(ingtypes.BackSSLRedirect, "False"),
+			options.CustomHostName(subHostname),
+			options.CustomTLS(secret.Name),
+			options.CustomObject(func(o client.Object) {
+				ing := o.(*networkingv1.Ingress)
+				ing.Spec.TLS[0].Hosts = []string{wildcardHostname, baseHostname}
+			}),
+		)
+
+		resHTTP := f.Request(ctx, t, http.MethodGet, subHostname, "/",
+			options.ExpectResponseCode(http.StatusOK),
+		)
+		assert.True(t, resHTTP.EchoResponse.Parsed)
+
+		resHTTPS := f.Request(ctx, t, http.MethodGet, subHostname, "/",
+			options.TLSRequest(),
+			options.SNI(subHostname),
+			options.ClientCA(ca),
+			options.ExpectResponseCode(http.StatusOK),
+		)
+		assert.True(t, resHTTPS.EchoResponse.Parsed)
+	})
+
 	t.Run("should authorize request", func(t *testing.T) {
 		t.Parallel()
 

@@ -619,6 +619,7 @@ type HostTLSConfig struct {
 	CAErrorPage    string
 	UseDefaultCrt  bool
 	FollowRedirect bool
+	HTTPSMap       bool
 }
 
 // EndpointNaming ...

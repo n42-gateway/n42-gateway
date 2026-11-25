@@ -343,7 +343,7 @@ func (h *Host) RemovePath(hpath *HostPath) {
 
 // HasTLS ...
 func (h *Host) HasTLS() bool {
-	return h.TLS.UseDefaultCrt || h.TLS.TLSHash != ""
+	return h.TLS.UseDefaultCrt || h.TLS.TLSHash != "" || h.TLS.HTTPSMap
 }
 
 func (h *hostResolver) UseTLS() bool {
