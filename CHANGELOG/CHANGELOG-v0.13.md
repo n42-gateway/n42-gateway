@@ -3,6 +3,10 @@
 * [Major improvements](#major-improvements)
 * [Upgrade notes - read before upgrade from v0.12!](#upgrade-notes)
 * [Contributors](#contributors)
+* [v0.13.22](#v01322)
+  * [Reference](#reference-r22)
+  * [Release notes](#release-notes-r22)
+  * [Fixes and improvements](#fixes-and-improvements-r22)
 * [v0.13.21](#v01321)
   * [Reference](#reference-r21)
   * [Release notes](#release-notes-r21)
@@ -159,6 +163,47 @@ Breaking backward compatibility from v0.12
 * Roman Gherta ([rgherta](https://github.com/rgherta))
 * ssanders1449 ([ssanders1449](https://github.com/ssanders1449))
 * Wojciech Chojnowski ([DCkQ6](https://github.com/DCkQ6))
+
+# v0.13.22
+
+## Reference (r22)
+
+* Changelog and release notes: [v0.13.22](https://github.com/n42-gateway/n42-gateway/blob/master/CHANGELOG/CHANGELOG-v0.13.md#v01322)
+* Release date: `2026-11-25`
+* Helm chart: `--version 0.13.22`
+* Image (Quay): `quay.io/jcmoraisjr/haproxy-ingress:v0.13.22`
+* Image (Docker Hub): `docker.io/jcmoraisjr/haproxy-ingress:v0.13.22`
+* Embedded HAProxy version: `2.4.36`
+* GitHub release: `https://github.com/n42-gateway/n42-gateway/releases/tag/v0.13.22`
+
+## Release notes (r22)
+
+This release fixes known vulnerabilities found on v0.13 branch:
+
+- Hadi Assalem reported the ability of an authenticated user with Ingress write permission on any namespace to execute arbitrary code in the HAProxy container. This is a critical vulnerability, roughly CVSS 9. A CVE will be issued shortly through GitHub Security Advisory.
+- Update base image and Go, which fixes a number of reported CVEs on OS libraries, Go's stdlib and dependencies.
+
+Other improvements:
+
+- The HAProxy container does not mount the controller's service account anymore when External HAProxy is used. Prefer to configure HAProxy as a sidecar container for security reasons. See [External HAProxy documentation](https://n42-gateway.github.io/examples/external-haproxy/).
+
+Note that the embedded HAProxy has known vulnerabilities but it is not being maintained anymore. Update HAProxy Ingress to a newer version or use an up to date HAProxy image via External HAProxy deployment.
+
+Dependencies:
+
+- go from 1.26.10 to 1.26.11
+
+## Fixes and improvements (r22)
+
+Fixes and improvements since `v0.13.21`:
+
+* bump dependencies [e6cc3f2](https://github.com/n42-gateway/n42-gateway/commit/e6cc3f250f54a04583cc8bf6561ee583ca7b5e0b) (Joao Morais)
+* bump go from 1.26.10 to 1.26.11 [0991813](https://github.com/n42-gateway/n42-gateway/commit/09918133bc5bfcfddcc536caccddaeacb43e10be) (Joao Morais)
+* fix: trim trailing lines from single line configs [#1594](https://github.com/n42-gateway/n42-gateway/pull/1594) (jcmoraisjr)
+
+Chart improvements since `v0.13.21`:
+
+* manually mount sa only in controller pod [#109](https://github.com/n42-gateway/charts/pull/109) (jcmoraisjr)
 
 # v0.13.21
 
