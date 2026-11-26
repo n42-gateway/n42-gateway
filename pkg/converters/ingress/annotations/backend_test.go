@@ -3427,3 +3427,136 @@ WARN skipping invalid IP or cidr on ingress 'default/ing1': 192.168.0/16`,
 		c.teardown()
 	}
 }
+
+func TestPreferSameNode(t *testing.T) {
+	// node=weight[,node=weight...]
+	buildEndpoints := func(endpoints string) []*hatypes.Endpoint {
+		var eps []*hatypes.Endpoint
+		for _, endpoint := range strings.Split(endpoints, ",") {
+			nodeWeight := strings.Split(endpoint, "=")
+			weight, _ := strconv.Atoi(nodeWeight[1])
+			eps = append(eps, &hatypes.Endpoint{
+				Enabled:  true,
+				IP:       "172.17.0.11",
+				Port:     8080,
+				NodeName: nodeWeight[0],
+				Weight:   weight,
+			})
+		}
+		return eps
+	}
+	testCases := []struct {
+		prefer     string
+		nodeName   string
+		endpoints  string
+		expWeights []int
+	}{
+		// 0 - key not declared
+		{
+			nodeName:   "node1",
+			endpoints:  "node1=1,node2=1,node3=1",
+			expWeights: []int{1, 1, 1},
+		},
+		// 1 - explicitly disabled
+		{
+			prefer:     "false",
+			nodeName:   "node1",
+			endpoints:  "node1=1,node2=1,node3=1",
+			expWeights: []int{1, 1, 1},
+		},
+		// 2 - controller's node name is unknown
+		{
+			prefer:     "true",
+			endpoints:  "node1=1,node2=1,=1",
+			expWeights: []int{1, 1, 1},
+		},
+		// 3 - ingress default weight
+		{
+			prefer:     "true",
+			nodeName:   "node1",
+			endpoints:  "node1=1,node2=1,node3=1",
+			expWeights: []int{256, 1, 1},
+		},
+		// 4 - gateway default weight
+		{
+			prefer:     "true",
+			nodeName:   "node2",
+			endpoints:  "node1=128,node2=128,node3=128",
+			expWeights: []int{1, 256, 1},
+		},
+		// 5 - no endpoint in the same node, balance is preserved
+		{
+			prefer:     "true",
+			nodeName:   "node4",
+			endpoints:  "node1=128,node2=64,node3=128",
+			expWeights: []int{128, 64, 128},
+		},
+		// 6 - endpoint without node name
+		{
+			prefer:     "true",
+			nodeName:   "node1",
+			endpoints:  "node1=1,=1",
+			expWeights: []int{256, 1},
+		},
+		// 7 - more than one endpoint in the same node
+		{
+			prefer:     "true",
+			nodeName:   "node1",
+			endpoints:  "node1=1,node1=1,node2=1",
+			expWeights: []int{256, 256, 1},
+		},
+		// 8 - proportion between local endpoints is preserved
+		{
+			prefer:     "true",
+			nodeName:   "node1",
+			endpoints:  "node1=30,node1=10,node2=30,node3=10",
+			expWeights: []int{256, 85, 1, 1},
+		},
+		// 9 - draining endpoints continue draining
+		{
+			prefer:     "true",
+			nodeName:   "node1",
+			endpoints:  "node1=1,node1=0,node2=1,node2=0",
+			expWeights: []int{256, 0, 1, 0},
+		},
+		// 10 - the only local endpoint is draining
+		{
+			prefer:     "true",
+			nodeName:   "node1",
+			endpoints:  "node1=0,node2=128,node3=128",
+			expWeights: []int{0, 128, 128},
+		},
+		// 11 - already at the maximum weight
+		{
+			prefer:     "true",
+			nodeName:   "node1",
+			endpoints:  "node1=256,node2=256",
+			expWeights: []int{256, 1},
+		},
+	}
+	source := &Source{
+		Namespace: "default",
+		Name:      "ing1",
+		Type:      "ingress",
+	}
+	for i, test := range testCases {
+		c := setup(t)
+		ann := map[string]string{}
+		if test.prefer != "" {
+			ann[ingtypes.BackPreferSameNode] = test.prefer
+		}
+		d := c.createBackendData("default/app", source, ann, map[string]string{})
+		d.backend.Endpoints = buildEndpoints(test.endpoints)
+		u := c.createUpdater()
+		u.options.NodeName = test.nodeName
+		// should be idempotent
+		u.buildBackendPreferSameNode(d)
+		u.buildBackendPreferSameNode(d)
+		weights := make([]int, len(d.backend.Endpoints))
+		for j, ep := range d.backend.Endpoints {
+			weights[j] = ep.Weight
+		}
+		c.compareObjects("prefer same node weight", i, weights, test.expWeights)
+		c.teardown()
+	}
+}

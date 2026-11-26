@@ -31,6 +31,7 @@ type ConverterOptions struct {
 	DynamicConfig    *DynamicConfig
 	LocalFSPrefix    string
 	IsExternal       bool
+	NodeName         string
 	MasterSocket     string
 	AdminSocket      string
 	AcmeSocket       string

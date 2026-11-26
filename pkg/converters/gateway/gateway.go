@@ -1012,6 +1012,7 @@ func (c *converter) createBackend(routeSource *source, refEvent *routeParentRefE
 	for i := range backends {
 		for _, addr := range backends[i].epReady {
 			ep := habackend.AddEndpoint(addr.IP, addr.Port, addr.TargetRef)
+			ep.NodeName = addr.NodeName
 			ep.Weight = cl[i].Weight
 		}
 	}

@@ -67,6 +67,7 @@ func createDefaults() map[string]string {
 		types.BackHSTSPreload:              "false",
 		types.BackInitialWeight:            "1",
 		types.BackOAuthHeaders:             "X-Auth-Request-Email",
+		types.BackPreferSameNode:           "false",
 		types.BackSessionCookieDynamic:     "true",
 		types.BackSessionCookiePreserve:    "false",
 		types.BackSessionCookieValue:       "server-name",

@@ -312,7 +312,7 @@ func CreateWithConfig(ctx context.Context, restConfig *rest.Config, opt *Options
 		Name:      os.Getenv("POD_NAME"),
 	}
 
-	controllerPodSelector, err := getControllerPodSelector(ctx, configLog, client, controllerPod)
+	controllerPodSelector, controllerNodeName, err := getControllerPodSelector(ctx, configLog, client, controllerPod)
 	if err != nil {
 		return nil, fmt.Errorf("error getting controller pod selector: %w", err)
 	}
@@ -580,6 +580,7 @@ func CreateWithConfig(ctx context.Context, restConfig *rest.Config, opt *Options
 		ControllerName:           controllerName,
 		ControllerPod:            controllerPod,
 		ControllerPodSelector:    controllerPodSelector,
+		ControllerNodeName:       controllerNodeName,
 		DefaultDirCACerts:        defaultDirCACerts,
 		DefaultDirCerts:          defaultDirCerts,
 		DefaultDirCrl:            defaultDirCrl,
@@ -754,16 +755,18 @@ func hasResources(apis *metav1.APIResourceList, resources ...string) bool {
 	return true
 }
 
-func getControllerPodSelector(ctx context.Context, configLog logr.Logger, client kubernetes.Interface, controllerPod types.NamespacedName) (labels.Selector, error) {
+// getControllerPodSelector returns the selector of the controller pods, and
+// also the name of the node where this controller is running.
+func getControllerPodSelector(ctx context.Context, configLog logr.Logger, client kubernetes.Interface, controllerPod types.NamespacedName) (labels.Selector, string, error) {
 	if controllerPod.Name == "" || controllerPod.Namespace == "" {
 		// a missing selector is fine, everyone that needs it
 		// (status, peers) should validate on config processing.
-		return nil, nil
+		return nil, "", nil
 	}
 
 	pod, err := client.CoreV1().Pods(controllerPod.Namespace).Get(ctx, controllerPod.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var owner *metav1.OwnerReference
@@ -801,7 +804,7 @@ func getControllerPodSelector(ctx context.Context, configLog logr.Logger, client
 			var err error
 			podSelector, err = metav1.LabelSelectorAsSelector(labelSelector)
 			if err != nil {
-				return nil, fmt.Errorf("error parsing controller pod selector: %w", err)
+				return nil, "", fmt.Errorf("error parsing controller pod selector: %w", err)
 			}
 		}
 	} else {
@@ -822,7 +825,7 @@ func getControllerPodSelector(ctx context.Context, configLog logr.Logger, client
 
 	configLog.Info("controller pod selector configured", "selector", podSelector.String(), "namespace", controllerPod.Namespace)
 
-	return podSelector, nil
+	return podSelector, pod.Spec.NodeName, nil
 }
 
 func readIPModeFromNode(ctx context.Context, client *kubernetes.Clientset, controllerPod types.NamespacedName) (hasIPv4, hasIPv6 bool, err error) {
@@ -906,6 +909,7 @@ type Config struct {
 	ControllerName           string
 	ControllerPod            types.NamespacedName
 	ControllerPodSelector    labels.Selector
+	ControllerNodeName       string
 	DefaultDirCerts          string
 	DefaultDirCACerts        string
 	DefaultDirCrl            string

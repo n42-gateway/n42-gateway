@@ -74,6 +74,7 @@ type Endpoint struct {
 	Port      int
 	Target    string
 	TargetRef string
+	NodeName  string
 }
 
 func createEndpointSlices(endpointSlices []*discoveryv1.EndpointSlice, svcPort *api.ServicePort) (ready, notReady []*Endpoint, err error) {
@@ -124,6 +125,9 @@ func createEndpointSlices(endpointSlices []*discoveryv1.EndpointSlice, svcPort *
 					addr = hatypes.LoopbackV4
 				}
 				domainEndpoint := newEndpoint(addr, int(*epPort.Port), endpoint.TargetRef)
+				if endpoint.NodeName != nil {
+					domainEndpoint.NodeName = *endpoint.NodeName
+				}
 
 				// From the API docs of EndpointConditions:
 				//

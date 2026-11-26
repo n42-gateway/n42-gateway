@@ -222,6 +222,7 @@ const (
 	BackOAuthURIPrefix           = "oauth-uri-prefix"
 	BackPathType                 = "path-type"
 	BackPeersTable               = "peers-table"
+	BackPreferSameNode           = "prefer-same-node"
 	BackProxyBodySize            = "proxy-body-size"
 	BackProxyProtocol            = "proxy-protocol"
 	BackRedirectTo               = "redirect-to"

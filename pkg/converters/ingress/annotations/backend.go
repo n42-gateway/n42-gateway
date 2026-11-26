@@ -861,6 +861,48 @@ func (c *updater) buildBackendPeers(d *backData) {
 	d.backend.PeersTable = table.StringLine()
 }
 
+// maxServerWeight is the highest weight HAProxy accepts on a server.
+const maxServerWeight = 256
+
+// buildBackendPreferSameNode makes the endpoints running in the same node of
+// this controller receive most of the requests. Endpoints from other nodes are
+// preserved in the backend, with their health checks, using the lowest weight.
+//
+// Weight is used instead of the backup keyword because it can be changed via
+// the runtime API, so endpoint updates continue to not need a reload.
+func (c *updater) buildBackendPreferSameNode(d *backData) {
+	if !d.mapper.Get(ingtypes.BackPreferSameNode).Bool() {
+		return
+	}
+	nodeName := c.options.NodeName
+	if nodeName == "" {
+		// missing controller's node name, eg running out of the cluster
+		return
+	}
+	// Weight zero means draining or out of blue/green balance, leave as is.
+	maxLocalWeight := 0
+	for _, ep := range d.backend.Endpoints {
+		if ep.NodeName == nodeName && ep.Weight > maxLocalWeight {
+			maxLocalWeight = ep.Weight
+		}
+	}
+	if maxLocalWeight == 0 {
+		// no endpoint in this node, leave the balance between the others as is.
+		return
+	}
+	for _, ep := range d.backend.Endpoints {
+		if ep.Weight == 0 {
+			continue
+		}
+		if ep.NodeName == nodeName {
+			// preserves the proportion between local endpoints
+			ep.Weight = max(1, ep.Weight*maxServerWeight/maxLocalWeight)
+		} else {
+			ep.Weight = 1
+		}
+	}
+}
+
 var validDomainRegex = regexp.MustCompile(`^([A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,6}$`)
 
 func (c *updater) buildBackendProtocol(d *backData) {
