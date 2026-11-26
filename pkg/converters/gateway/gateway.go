@@ -1101,6 +1101,7 @@ func (c *converter) createTLSHosts(gatewaySource, routeSource *source, listener 
 	// ssl-passthrough, backend is TLS, just SNI inspection on haproxy without ssl-offload
 	f := c.haproxy.Frontends().AcquireFrontend(listener.Port, true)
 	f.StrictTLS = true
+	var pathlinks []*hatypes.PathLink
 	for _, hostname := range hostnames {
 		h := f.FindHost(string(hostname))
 		if h != nil && !h.SSLPassthrough {
@@ -1119,8 +1120,10 @@ func (c *converter) createTLSHosts(gatewaySource, routeSource *source, listener 
 		}
 		c.tracker.TrackNames(convtypes.ResourceHAHostname, string(hostname), convtypes.ResourceGateway, "gw")
 		h.AddLink(backend, link) // TODO missing a better abstraction for ssl-passthrough handling
+		// Returned so that the Service's annotations are applied to the backend.
+		pathlinks = append(pathlinks, link)
 	}
-	return nil
+	return pathlinks
 }
 
 func (c *converter) createTCPService(gatewaySource *source, listener *gatewayv1.Listener, hostnames []gatewayv1.Hostname, backend *hatypes.Backend) []*hatypes.PathLink {
